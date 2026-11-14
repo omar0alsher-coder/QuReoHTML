@@ -44,9 +44,9 @@ public class MainActivity extends Activity {
     public class CookieBridge {
         @JavascriptInterface
         public void setCookies(String cookies) {
-            currentCookies = cookies;
+            currentCookies = cookies.replace("\n", "").replace("\r", "").trim();
             String domain = "https://me-tp.qureo.education";
-            for (String pair : cookies.split(";")) {
+            for (String pair : currentCookies.split(";")) {
                 String trimmed = pair.trim();
                 if (!trimmed.isEmpty()) {
                     CookieManager.getInstance().setCookie(domain, trimmed);
@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod(method);
+                conn.setInstanceFollowRedirects(false); // منع تحويل الصفحات
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setRequestProperty("User-Agent", "mark.via.gp");
                 conn.setRequestProperty("X-Requested-With", "mark.via.gp");
@@ -80,7 +81,11 @@ public class MainActivity extends Activity {
                 }
 
                 int responseCode = conn.getResponseCode();
-                InputStream is = (responseCode >= 200 && responseCode < 400) ? conn.getInputStream() : conn.getErrorStream();
+                if (responseCode == 302 || responseCode == 401) {
+                    return "{\"error\":\"Unauthorized\"}";
+                }
+
+                InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
                 BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                 StringBuilder response = new StringBuilder();
                 String line;

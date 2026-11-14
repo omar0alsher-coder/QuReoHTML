@@ -4,6 +4,20 @@
 <script>
 const originalFetch = window.fetch;
 window.fetch = async function(url, options) {
+    if (url.includes("/api/status")) {
+        try {
+            const body = JSON.parse(options.body);
+            window.AndroidBridge.setCookies(body.cookies);
+            let meStr = window.AndroidBridge.request("GET", "https://me-tp.qureo.education/api/study/students/me", null);
+            if (meStr.includes("error") || meStr.includes("<")) return new Response(JSON.stringify({error:"فشل الاتصال"}), {status: 200});
+            let me = JSON.parse(meStr);
+            return new Response(JSON.stringify({user_id: me.id, name: me.name, total_diamonds: 0, chapters: []}), {status: 200});
+        } catch(e) { return new Response(JSON.stringify({error:e.message}), {status: 200}); }
+    }
+    return originalFetch.apply(this, arguments);
+};
+// 
+window.fetch = async function(url, options) {
     if (url.includes("qureo.education") || url.startsWith("/api")) {
         let fullUrl = url.startsWith("/api") ? "https://me-tp.qureo.education" + url : url;
         let method = options?.method || "GET";
