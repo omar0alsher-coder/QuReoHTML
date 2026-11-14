@@ -85,49 +85,65 @@ public class MainActivity extends Activity {
             HttpURLConnection conn = null;
             try {
                 URL url = new URL(urlStr);
-                String host = url.getHost();
-                String origin = "https://" + host;
-                String referer = host.contains("portal") ? origin + "/login" : origin + "/";
+                int redirects = 0;
+                int maxRedirects = 5;
+                int code = 0;
+                String finalMethod = method;
+                String finalBody = body;
 
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod(method);
-                conn.setInstanceFollowRedirects(false);
-                conn.setConnectTimeout(30000);
-                conn.setReadTimeout(30000);
-                conn.setRequestProperty("Accept", "application/json, text/plain, */*");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("X-Requested-With", "mark.via.gp");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36");
-                conn.setRequestProperty("Origin", origin);
-                conn.setRequestProperty("Referer", referer);
+                // متابعة التحويلات (Redirects) يدوياً لحل مشكلة 307 و 302
+                while (redirects <= maxRedirects) {
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod(finalMethod);
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(30000);
+                    conn.setReadTimeout(30000);
 
-                String cookieStr = serializeCookies();
-                if (!cookieStr.isEmpty()) conn.setRequestProperty("Cookie", cookieStr);
+                    String origin = "https://" + url.getHost();
+                    String referer = url.getHost().contains("portal") ? origin + "/login" : origin + "/";
 
-                if (body != null && !body.isEmpty() && (method.equals("POST") || method.equals("PUT") || method.equals("PATCH"))) {
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.getBytes("UTF-8"));
-                    os.flush();
-                    os.close();
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36");
+                    conn.setRequestProperty("Origin", origin);
+                    conn.setRequestProperty("Referer", referer);
+                    conn.setRequestProperty("Accept", "*/*");
+
+                    String cookieStr = serializeCookies();
+                    if (!cookieStr.isEmpty()) conn.setRequestProperty("Cookie", cookieStr);
+
+                    if (finalBody != null && !finalBody.isEmpty() && (finalMethod.equals("POST") || finalMethod.equals("PUT") || finalMethod.equals("PATCH"))) {
+                        conn.setDoOutput(true);
+                        OutputStream os = conn.getOutputStream();
+                        os.write(finalBody.getBytes("UTF-8"));
+                        os.flush();
+                        os.close();
+                    }
+
+                    code = conn.getResponseCode();
+
+                    // حفظ الكوكيز من كل استجابة
+                    Map<String, List<String>> headers = conn.getHeaderFields();
+                    List<String> setCookies = headers.get("Set-Cookie");
+                    if (setCookies == null) setCookies = headers.get("set-cookie");
+                    if (setCookies != null) {
+                        for (String c : setCookies) mergeCookie(c);
+                    }
+
+                    // لو السيرفر طلب تحويل (307, 302, 301...)
+                    if (code >= 300 && code < 400) {
+                        String location = conn.getHeaderField("Location");
+                        if (location != null && !location.isEmpty()) {
+                            url = new URL(url, location);
+                            if (code == 303) finalMethod = "GET"; // 303 يعني حول لـ GET
+                            redirects++;
+                            conn.disconnect();
+                            continue; // كمل للرابط الجديد
+                        }
+                    }
+                    break; // لو مفيش تحويل، اخرج من الحلقة
                 }
 
-                int code = conn.getResponseCode();
-
-                Map<String, List<String>> headers = conn.getHeaderFields();
-                List<String> setCookies = headers.get("Set-Cookie");
-                if (setCookies == null) setCookies = headers.get("set-cookie");
-                if (setCookies != null) {
-                    for (String c : setCookies) mergeCookie(c);
-                }
-
-                InputStream is;
-                if (code >= 200 && code < 400) {
-                    try { is = conn.getInputStream(); } catch (Exception e) { is = null; }
-                } else {
-                    is = conn.getErrorStream();
-                }
-
+                InputStream is = (code >= 200 && code < 400) ? conn.getInputStream() : conn.getErrorStream();
                 StringBuilder sb = new StringBuilder();
                 if (is != null) {
                     BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
@@ -135,7 +151,6 @@ public class MainActivity extends Activity {
                     while ((line = br.readLine()) != null) sb.append(line);
                     br.close();
                 }
-
                 return "{\"status\":" + code + ",\"body\":" + JSONObject.quote(sb.toString()) + "}";
             } catch (Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();

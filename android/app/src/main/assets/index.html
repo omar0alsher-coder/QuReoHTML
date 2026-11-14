@@ -126,7 +126,7 @@ function doLogin() {
                 return resetBtn(btn, btnText, spinner);
             }
 
-            // Fix cookie
+            // تأكيد إضافة الكوكي المطلوبة بعد تسجيل الدخول
             AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
 
             let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
