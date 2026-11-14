@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -27,16 +28,15 @@ import java.util.Map;
 public class MainActivity extends Activity {
     private WebView webView;
     private final Map<String, String> cookies = new LinkedHashMap<>();
+    private PowerManager.WakeLock wakeLock;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // منع الشاشة من الإطفاء
+        // شاشة كاملة ومنع الإطفاء
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        
-        // شاشة كاملة 100%
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             WindowManager.LayoutParams params = getWindow().getAttributes();
@@ -52,6 +52,13 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
         );
+
+        // WakeLock عشان البروسيسور يفضل شغال في الخلفية
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        if (powerManager != null) {
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Qureo::MainWakeLock");
+            wakeLock.acquire();
+        }
 
         try {
             javax.net.ssl.TrustManager[] trustAll = new javax.net.ssl.TrustManager[]{
@@ -78,6 +85,7 @@ public class MainActivity extends Activity {
         s.setAllowUniversalAccessFromFileURLs(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setMediaPlaybackRequiresUserGesture(false);
+        s.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         webView.addJavascriptInterface(new Bridge(), "AndroidBridge");
         webView.setWebViewClient(new WebViewClient());
@@ -86,11 +94,16 @@ public class MainActivity extends Activity {
         webView.loadUrl("file:///android_asset/index.html");
     }
 
-    // منع إيقاف الـ WebView لما التطبيق يروح للخلفية عشان يفضل يحل
     @Override
-    protected void onPause() {
-        super.onPause();
-        // webView.onPause(); // تم تعطيلها عمداً عشان الحل يكمل في الخلفية
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) webView.resumeTimers(); // عشان الـ JS يفضل شغال
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
+        super.onDestroy();
     }
 
     public class Bridge {
@@ -136,8 +149,8 @@ public class MainActivity extends Activity {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod(finalMethod);
                     conn.setInstanceFollowRedirects(false);
-                    conn.setConnectTimeout(30000);
-                    conn.setReadTimeout(30000);
+                    conn.setConnectTimeout(15000); // سرعة قصوى
+                    conn.setReadTimeout(15000);
 
                     String origin = "https://" + url.getHost();
                     String referer = url.getHost().contains("portal") ? origin + "/login" : origin + "/";

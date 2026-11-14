@@ -26,7 +26,6 @@
         .log-error { color: #f87171; font-weight: bold; }
         header { padding-top: env(safe-area-inset-top); }
         
-        /* تأثير التحديث اللحظي */
         .flash-perfect { animation: flashPerfect 0.5s ease-out; }
         @keyframes flashPerfect {
             0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
@@ -37,7 +36,6 @@
 <body>
     <div id="app" class="min-h-screen"></div>
     
-    <!-- السجل برة الـ app عشان متمسحش -->
     <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[70vh] bg-[#0a0a0a] border-t border-slate-700 z-50 flex-col shadow-2xl hidden">
         <div class="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800">
             <div class="flex items-center gap-2 text-sm text-slate-300 font-mono">
@@ -61,7 +59,7 @@
 
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
         
-        // سرعة خرافية (150 مللي ثانية)
+        // سرعة قصوى (10ms) - أقصى سرعة ممكنة بدون ما السيرفر يرفض
         function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
         
         function cleanText(text) {
@@ -121,7 +119,7 @@
                 initIcons();
                 
                 AndroidBridge.clearCookies();
-                await sleep(100);
+                await sleep(10);
 
                 let loginRes = safeParse(AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd})));
                 if (!loginRes || (loginRes.status !== 200 && loginRes.status !== 302)) {
@@ -300,7 +298,6 @@
             });
         }
 
-        // تحديث الكارت فوراً بعد الحل بدون ما نعمل ريفريش للصفحة
         function updateCardInstant(chapId, score, total, isPerfect) {
             let c = chaptersData.find(x => x.id === chapId);
             if (!c) return;
@@ -311,17 +308,14 @@
             let div = document.getElementById(`chap-${chapId}`);
             if (!div) return;
 
-            // تحديث الكلاس بتاع الحدود
             div.className = `chapter-card glass rounded-xl p-3 flex flex-col relative overflow-hidden group border-t-4 ${isPerfect ? 'border-t-emerald-500 flash-perfect' : (score > 0 ? 'border-t-blue-500' : 'border-t-slate-600')}`;
-            
-            // تحديث المحتوى الداخلي
             div.innerHTML = getCardHTML(c);
             initIcons();
             
-            // مسح تأثير الوميض بعد ما يخلص
             if (isPerfect) setTimeout(() => div.classList.remove('flash-perfect'), 500);
         }
 
+        // تحديث اللوجز بسرعة الصاروخ
         function appendLog(msg, type="info") {
             let terminal = document.getElementById('logTerminal');
             if(!terminal) return;
@@ -329,7 +323,8 @@
             p.className = `log-${type}`;
             p.innerText = msg;
             terminal.appendChild(p);
-            terminal.scrollTop = terminal.scrollHeight;
+            // استخدام scrollTo بدل scrollTop عشان يكون أسرع
+            terminal.scrollTo({ top: terminal.scrollHeight, behavior: 'instant' });
         }
 
         async function startSolving(mode, singleId = null, singleNum = null) {
@@ -364,7 +359,6 @@
                     if (!isRunning) break;
                     appendLog(`\n========== المرحلة ${t.num} ==========`, "header");
                     await solveChapter(t.id, t.num);
-                    await sleep(200);
                 }
                 if (isRunning) appendLog("🎉🎉🎉 انتهى الحل بالكامل!", "success");
             } catch(e) {
@@ -389,7 +383,7 @@
                 let lecId = lec.id;
                 appendLog("▶ بدء الدرس: " + lecId, "header");
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId, null);
-                await sleep(100);
+                await sleep(10);
 
                 let lr = safeParse(AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lecId, null));
                 if (lr && lr.status === 200) {
@@ -403,19 +397,18 @@
                                 appendLog("  Q: " + cleanText(t.body?.question?.text).substring(0, 40) + "...", "q");
                                 appendLog("  A: " + ans.substring(0, 40) + "...", "a");
                                 AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: lang, answer: ans}}}));
-                                await sleep(100);
+                                await sleep(10);
                             }
                         }
                     }
                 }
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId + "/complete", null);
                 appendLog("  ✅ تم إنهاء الدرس", "success");
-                await sleep(100);
+                await sleep(10);
             }
 
             if (lectures.length > 0) {
-                appendLog("انتظار سريع عشان السيرفر يحدث...", "info");
-                await sleep(800); // إجباري عشان السيرفر يفتح الأسئلة
+                await sleep(50); // مزامنة سريعة جداً
             }
             if (!isRunning) return;
 
@@ -446,7 +439,7 @@
             appendLog("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(300);
+            await sleep(10);
 
             for (let idx = 0; idx < questions.length; idx++) {
                 if (!isRunning) return;
@@ -458,9 +451,9 @@
                     AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
                 }
                 appendLog("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " — sent dummy", "info");
-                await sleep(150);
+                await sleep(10);
             }
-            await sleep(500);
+            await sleep(50);
 
             appendLog("جلب الإجابات الصحيحة من السيرفر...", "info");
             let r1 = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
@@ -476,10 +469,10 @@
             }
 
             appendLog("🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...", "header");
-            await sleep(500);
+            await sleep(10);
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(300);
+            await sleep(10);
 
             let solved = 0;
             for (let idx = 0; idx < questions.length; idx++) {
@@ -499,27 +492,24 @@
                 } else {
                     appendLog("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " ❌ بدون إجابة", "error");
                 }
-                await sleep(150);
+                await sleep(10);
             }
             
             appendLog("التحقق من النتيجة النهائية...", "info");
-            await sleep(1000); // ننتظر السيرفر ثانية واحدة يحدث الداتابيز
+            await sleep(50);
             
             let rf = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
-            let score = solved; // نستخدم الإجابات اللي اتبعتت بنجاح
+            let score = solved; 
             if (rf && rf.status === 200) {
                 let res = safeParse(rf.body).result || safeParse(rf.body);
-                // نأخد أعلى نتيجة بين السيرفر واللي احنا حسبناه عشان نضمن إنها PERFECT
                 score = Math.max(score, res.correct_count || 0); 
             }
             
             let isPerfect = (score >= total);
             appendLog("🎉 النتيجة النهائية: " + score + "/" + total + (isPerfect ? " (PERFECT) 🔥" : ""), isPerfect ? "success" : "error");
             
-            // تحديث الكارت فوراً في نفس الثانية
             updateCardInstant(chapId, score, total, isPerfect);
             
-            // تحديث الجواهر بس من غير ما نمسح الشاشة
             let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
             if (d && d.status === 200) {
                 let diamEl = document.getElementById("totalDiamonds");
