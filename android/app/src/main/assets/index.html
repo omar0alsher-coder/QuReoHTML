@@ -125,21 +125,17 @@ function doLogin() {
 
     setTimeout(() => {
         try {
-            // 1. إرسال طلب تسجيل الدخول (بنفس طريقة البايثون)
             let loginResStr = AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd}));
             let loginRes = JSON.parse(loginResStr);
             
-            if (loginRes.status === 200 || loginRes.status === 302 || loginRes.status === 307) {
-                // 2. سحب الكوكيز اللي رجعت من السيرفر
+            // نفس منطق البايثون: لو 200 أو 302 يبقى تمام
+            if (loginRes.status === 200 || loginRes.status === 302) {
                 let currentCookies = AndroidBridge.getLastCookies();
-                // 3. إضافة الكوكي المطلوبة يدوياً (زي البايثون)
                 if (!currentCookies.includes("student_selected_content_id")) {
                     currentCookies += "; student_selected_content_id=javascript_ar";
                 }
-                // 4. حفظ الكوكيز عشان تتبعت في الطلبات الجاية
                 AndroidBridge.setCookies(currentCookies);
                 
-                // 5. التأكد من تسجيل الدخول
                 let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
                 let verify = JSON.parse(verifyStr);
                 
@@ -159,20 +155,21 @@ function doLogin() {
                             resetBtn(btn, btnText, spinner);
                         }, 500);
                     } catch(e) {
-                        showError("فشل قراءة بيانات الطالب: " + verify.body);
+                        showError("فشل قراءة البيانات: " + verify.body);
                         resetBtn(btn, btnText, spinner);
                     }
                 } else {
+                    // لو لسه فيه مشكلة، هنطبع الخطأ الحقيقي
                     let errMsg = verify.body && verify.body.includes("error") ? JSON.parse(verify.body).error : "HTTP " + verify.status;
                     showError("فشل التحقق: " + errMsg);
                     resetBtn(btn, btnText, spinner);
                 }
             } else {
-                showError("بيانات مرفوضة (HTTP " + loginRes.status + "). تأكد من الـ ID والباسورد.");
+                showError("بيانات مرفوضة (HTTP " + loginRes.status + ")");
                 resetBtn(btn, btnText, spinner);
             }
         } catch(e) {
-            showError("خطأ في الاتصال: " + e.message);
+            showError("خطأ: " + e.message);
             resetBtn(btn, btnText, spinner);
         }
     }, 100);
