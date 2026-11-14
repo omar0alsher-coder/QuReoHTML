@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuReo Premium</title>
+<style>
+body { font-family: sans-serif; background:#1a1a2e; color:white; padding:15px; margin:0; }
+h2 { text-align:center; color:#4cc9f0; }
+textarea,button { width:100%; padding:10px; border-radius:6px; border:1px solid #333; background:#0f0f1e; color:white; box-sizing:border-box; }
+button { background:#0d6efd; font-size:16px; margin:10px 0; cursor:pointer; }
+button:disabled { background:#555; }
+#log { background:#000; color:#0f0; padding:10px; height:400px; overflow-y:scroll; font-family:monospace; font-size:12px; white-space:pre-wrap; border-radius:6px; }
+label { display:block; margin-top:10px; }
+</style>
+</head>
+<body>
+<h2>QuReo Premium</h2>
+<label>الكوكيز:</label>
+<textarea id="cookies" placeholder="session=..." rows="4"></textarea>
+<button id="startBtn" onclick="start()">بدء الحل الشامل (1-42)</button>
+<div id="log"></div>
+
+<script>
+const BASE = "https://me-tp.qureo.education";
+const logEl = document.getElementById('log');
+let running = false;
+
+function log(m){ logEl.textContent += m + "\n"; logEl.scrollTop = logEl.scrollHeight; }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function api(method, path, body){
+    let url = path.startsWith('http') ? path : BASE + path;
+    let opts = { method, credentials:'include', redirect:'follow', headers:{'Accept':'*/*'} };
+    if (body){ opts.headers['Content-Type']='application/json'; opts.body = JSON.stringify(body); }
+    try { return await fetch(url, opts); }
+    catch(e){ log("⚠️ "+e.message); return null; }
+}
+
+async function start(){
+    if (running) return;
+    const cookies = document.getElementById('cookies').value.trim();
+    if (!cookies){ log("❌ أدخل الكوكيز"); return; }
+    running = true;
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true; btn.textContent = "جاري الحل...";
+
+    if (window.AndroidBridge) window.AndroidBridge.setCookies(cookies);
+    await sleep(800);
+
+    log("🚀 فحص الاتصال...");
+    let r = await api("GET","/api/study/students/me");
+    if (!r || r.status !== 200){
+        log("❌ فشل: " + (r ? r.status : "network"));
+        running=false; btn.disabled=false; btn.textContent="بدء الحل الشامل (1-42)";
+        return;
+    }
+    let me = await r.json();
+    log("✅ مرحباً " + (me.name || me.id));
+
+    for (let i=1; i<=42; i++){
+        log("\n▶ المرحلة " + i);
+        try { await solveChapter(90000+i, i); } catch(e){ log("❌ "+e.message); }
+        await sleep(800);
+    }
+    log("\n🎉 انتهى!");
+    running=false; btn.disabled=false; btn.textContent="بدء الحل الشامل (1-42)";
+}
+
+async function solveChapter(chapId, num){
+    let r = await api("GET","/api/study/chapters/"+chapId);
+    if (!r || r.status!==200){ log("  ⚠️ تخطي"); return; }
+    let data = await r.json();
+    let lectures = data.lectures || [];
+    let testType = (data.chapter && data.chapter.test_type) || "test";
+    let prefix = testType==="test" ? "test" : "review";
+
+    for (let lec of lectures){
+        await api("PUT","/api/study/students/lectures/"+lec.id);
+        await sleep(150);
+        let lr = await api("GET","/api/study/lectures/"+lec.id);
+        if (lr && lr.status===200){
+            let ld = await lr.json();
+            for (let t of (ld.talks||[])){
+                if (t.type==="try"){
+                    let td = (t.body && t.body.codes && t.body.codes[0]) || {};
+                    if (td.model_answer){
+                        await api("PUT","/api/study/students/lecture-talks/"+t.id,
+                            {value:{try:{lang:td.lang||"javascript", answer:td.model_answer}}});
+                        await sleep(150);
+                    }
+                }
+            }
+        }
+        await api("PUT","/api/study/students/lectures/"+lec.id+"/complete");
+        await sleep(150);
+    }
+
+    let rq = await api("GET","/api/study/chapters/"+chapId+"/test");
+    if (!rq || rq.status!==200){ log("  ❌ فشل جلب الأسئلة"); return; }
+    let qData = await rq.json();
+    let qs = [];
+    if (Array.isArray(qData)) for (let q of qData) if (q.question&&q.question.id) qs.push({id:q.question.id, type:q.question.type});
+    if (!qs.length){ log("  ⚠️ لا أسئلة"); return; }
+
+    let total = qs.length, ep = "/api/study/students/"+prefix+"-questions";
+    log("  🔵 PASS 1: "+total+" سؤال...");
+    await api("DELETE","/api/study/students/chapters/"+chapId+"/test");
+    await api("PUT","/api/study/students/chapters/"+chapId+"/test");
+    await sleep(400);
+
+    for (let q of qs){
+        if (q.type==="choice") await api("PUT", ep+"/"+q.id+"/answer/choice", {choice_id:parseInt(q.id+"1")});
+        else await api("PUT", ep+"/"+q.id+"/answer/description", {answer_code:"let _x=0;"});
+        await sleep(150);
+    }
+    await sleep(800);
+
+    let r1 = await api("GET","/api/study/students/chapters/"+chapId+"/"+prefix+"/result");
+    let answers = {};
+    if (r1 && r1.status===200){
+        let res = (await r1.json()).result || {};
+        for (let cr of (res.choice_results||[])){
+            let correct = (cr.choices||[]).find(c=>c.correct);
+            if (cr.question_id && correct && correct.choice) answers[cr.question_id]={choice_id:correct.choice.id};
+        }
+        for (let dr of (res.description_results||[])){
+            if (dr.question_id && dr.model_answer) answers[dr.question_id]={answer_code:dr.model_answer};
+        }
+    }
+
+    log("  🟢 PASS 2...");
+    await api("DELETE","/api/study/students/chapters/"+chapId+"/test");
+    await api("PUT","/api/study/students/chapters/"+chapId+"/test");
+    await sleep(400);
+
+    for (let q of qs){
+        let a = answers[q.id];
+        if (a){
+            if (q.type==="choice") await api("PUT", ep+"/"+q.id+"/answer/choice", a);
+            else await api("PUT", ep+"/"+q.id+"/answer/description", a);
+        }
+        await sleep(150);
+    }
+    await sleep(800);
+
+    let rf = await api("GET","/api/study/students/chapters/"+chapId+"/"+prefix+"/result");
+    let score = 0;
+    if (rf && rf.status===200) score = ((await rf.json()).result||{}).correct_count || 0;
+    log("  🎉 "+score+"/"+total);
+}
+</script>
+</body>
+</html>
