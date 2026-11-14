@@ -1,693 +1,324 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html dir="rtl" lang="ar">
 <head>
-
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qureo Premium Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Cairo', sans-serif; background: #09090b; color: #f8fafc; overflow-x: hidden; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-        .chapter-card { transition: all 0.3s ease; cursor: pointer; }
-        .chapter-card:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 10; }
-        #logTerminal { font-family: monospace; direction: ltr; text-align: left; font-size: 13px; line-height: 1.6; }
-        #logTerminal div { border-bottom: 1px solid #1e293b; padding: 2px 0; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        
-        .log-header { color: #c084fc; font-weight: bold; margin-top: 8px; border-top: 1px solid #334155; padding-top: 5px; }
-        .log-info { color: #60a5fa; }
-        .log-q { color: #fbbf24; }
-        .log-a { color: #34d399; }
-        .log-success { color: #10b981; font-weight: bold; }
-        .log-error { color: #f87171; font-weight: bold; }
-        .log-warn { color: #facc15; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QuReo</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0f19; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+#login-screen, #dashboard { display: none; flex-direction: column; padding: 20px; height: 100%; }
+.active { display: flex !important; }
+h2 { text-align: center; margin-bottom: 20px; color: #4cc9f0; }
+input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #333; background: #161b22; color: #fff; font-size: 16px; }
+button { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 18px; font-weight: bold; color: #fff; background: #0d6efd; cursor: pointer; transition: 0.2s; }
+button:active { transform: scale(0.98); }
+button:disabled { background: #444; cursor: not-allowed; }
+#error-msg { color: #ff4d4d; text-align: center; margin-top: 10px; display: none; }
+#overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; }
+.spinner { width: 50px; height: 50px; border: 5px solid #333; border-top-color: #4cc9f0; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#log { flex: 1; background: #000; color: #0f0; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap; border-radius: 8px; margin-bottom: 10px; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row button { flex: 1; }
+.btn-danger { background: #dc3545; }
+.btn-success { background: #198754; }
+#dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.badge { background: #0d6efd; padding: 4px 8px; border-radius: 12px; font-size: 12px; }
+</style>
 </head>
 <body>
-    <div id="app" class="min-h-screen"></div>
 
-    <script>
-        function initIcons() { lucide.createIcons(); }
+<div id="overlay"><div class="spinner"></div><p style="margin-top:15px; font-size:18px; color:#4cc9f0;">جاري التحميل...</p></div>
 
-        const app = document.getElementById('app');
-        let currentCookies = '';
-        let chaptersData = [];
+<div id="login-screen" class="active">
+    <h2>تسجيل الدخول</h2>
+    <input type="text" id="student_id" placeholder="رقم الطالب (ID)">
+    <input type="password" id="password" placeholder="كلمة المرور">
+    <button id="login-btn" onclick="doLogin()">دخول للمنصة</button>
+    <div id="error-msg"></div>
+</div>
 
-        function renderLogin(errorMsg = '') {
-            app.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-                    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600 rounded-full blur-[120px] opacity-30"></div>
-                    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600 rounded-full blur-[120px] opacity-30"></div>
-                    
-                    <div class="glass w-full max-w-md p-8 rounded-2xl relative z-10">
-                        <div class="flex flex-col items-center mb-8">
-                            <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-4 glow">
-                                <i data-lucide="shield" class="w-8 h-8 text-blue-400"></i>
-                            </div>
-                            <h1 class="text-3xl font-bold text-white mb-2">Qureo Premium</h1>
-                            <p class="text-slate-400 text-sm">أفضل أداة لحل المراحل بضمان 100%</p>
-                        </div>
+<div id="dashboard">
+    <div id="dashboard-header">
+        <span>مرحباً، <b id="user-name">...</b></span>
+        <span class="badge">💎 <span id="diamonds">0</span></span>
+    </div>
+    <div id="log"></div>
+    <div class="btn-row">
+        <button id="start-btn" class="btn-success" onclick="startSolving('perfect')">حل المراحل</button>
+        <button id="cancel-btn" class="btn-danger" onclick="cancelSolving()" disabled>إلغاء</button>
+    </div>
+    <button style="margin-top:10px; background:#6c757d;" onclick="logout()">تسجيل خروج</button>
+</div>
 
-                        ${errorMsg ? `<div class="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg mb-4 text-sm text-center">${errorMsg}</div>` : ''}
+<script>
+const BASE = "https://me-tp.qureo.education";
+const PORTAL = "https://me-portal.qureo.education";
+let isRunning = false;
+let currentCookies = "";
+let logIndex = 0;
+let logs = [];
 
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300 mb-1">التوكن (Cookie)</label>
-                                <div class="relative">
-                                    <i data-lucide="key" class="absolute right-3 top-3 w-5 h-5 text-slate-500"></i>
-                                    <textarea id="cookieInput" rows="2" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-3 pr-10 pl-4 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm" placeholder="i18next=ar; egy_student_access_token=..."></textarea>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300 mb-1">رقم الطالب (ID)</label>
-                                <div class="relative">
-                                    <i data-lucide="user" class="absolute right-3 top-3 w-5 h-5 text-slate-500"></i>
-                                    <input type="text" id="studentId" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-3 pr-10 pl-4 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="477650905" />
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-300 mb-1">كلمة المرور</label>
-                                <div class="relative">
-                                    <i data-lucide="key" class="absolute right-3 top-3 w-5 h-5 text-slate-500"></i>
-                                    <input type="password" id="password" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-3 pr-10 pl-4 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="********" />
-                                </div>
-                            </div>
-                            <button id="loginBtn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-6">
-                                <span>دخول للمنصة</span>
-                                <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            initIcons();
+function log(msg, type="info") {
+    let color = type === "error" ? "#ff4d4d" : type === "success" ? "#0f0" : type === "header" ? "#4cc9f0" : "#fff";
+    let span = document.createElement("div");
+    span.style.color = color;
+    span.innerText = msg;
+    document.getElementById("log").appendChild(span);
+    document.getElementById("log").scrollTop = document.getElementById("log").scrollHeight;
+}
 
-            document.getElementById('loginBtn').addEventListener('click', async () => {
-                const cookies = document.getElementById('cookieInput').value;
-                const id = document.getElementById('studentId').value;
+function showError(msg) {
+    let e = document.getElementById("error-msg");
+    e.innerText = msg; e.style.display = "block";
+}
 
-                if(!cookies || !id) { renderLogin("الرجاء إدخال التوكن ورقم الطالب"); return; }
+function showOverlay(show) {
+    document.getElementById("overlay").style.display = show ? "flex" : "none";
+}
 
-                const btn = document.getElementById('loginBtn');
-                btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>جاري الدخول...</span>`;
-                initIcons();
+async function api(method, url, body) {
+    if (url.startsWith("/api")) url = BASE + url;
+    let bodyStr = body ? JSON.stringify(body) : null;
+    let resStr = AndroidBridge.request(method, url, bodyStr);
+    try {
+        let parsed = JSON.parse(resStr);
+        if (parsed.status === 302 || parsed.status === 401) return null; // Unauthorized
+        if (parsed.status === 200) return parsed.body; // Return string to parse later
+        return { error: parsed.body };
+    } catch(e) { return { error: e.message }; }
+}
 
-                try {
-                    const res = await fetch('/api/status', {
-                        method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({cookies})
-                    });
-                    const data = await res.json();
-                    if(!res.ok) throw new Error(data.error || "فشل الاتصال");
-                    
-                    currentCookies = cookies;
-                    chaptersData = data.chapters;
-                    renderDashboard(data);
-                } catch(e) {
-                    renderLogin(e.message);
-                }
-            });
-        }
+async function doLogin() {
+    let sid = document.getElementById("student_id").value.trim();
+    let pwd = document.getElementById("password").value.trim();
+    if (!sid || !pwd) return showError("الرجاء إدخال البيانات");
 
-        function renderDashboard(userData) {
-            app.innerHTML = `
-                <div class="min-h-screen pb-20">
-                    <header class="glass sticky top-0 z-40 border-b border-slate-800">
-                        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                    <i data-lucide="sparkles" class="w-6 h-6 text-blue-400"></i>
-                                </div>
-                                <div>
-                                    <h1 class="text-lg font-bold text-white">Qureo Dashboard</h1>
-                                    <p class="text-xs text-slate-400">ID: ${userData.user_id}</p>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center gap-4">
-                                <div class="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
-                                    <span class="text-sm font-bold text-slate-300">الجواهر</span>
-                                    <span class="text-xl font-black text-blue-400" id="totalDiamonds">${userData.total_diamonds}</span>
-                                    <i data-lucide="diamond" class="w-5 h-5 text-blue-400 fill-current"></i>
-                                </div>
-                                <button id="logoutBtn" class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="تسجيل خروج">
-                                    <i data-lucide="log-out" class="w-6 h-6"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </header>
+    document.getElementById("login-btn").disabled = true;
+    document.getElementById("error-msg").style.display = "none";
+    showOverlay(true);
 
-                    <main class="max-w-7xl mx-auto px-4 mt-8">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                            <div>
-                                <h2 class="text-2xl font-bold text-white mb-1">المراحل</h2>
-                                <p class="text-sm text-slate-400">أكمل جميع المراحل (1 - 42) بضمان 100%</p>
-                            </div>
-                            <div class="flex flex-wrap gap-3 w-full md:w-auto">
-                                <button id="toggleLogsBtn" class="flex-1 md:flex-none px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 flex items-center justify-center gap-2">
-                                    <i data-lucide="terminal" class="w-5 h-5"></i> <span>السجل</span>
-                                </button>
-                                <button id="makePerfectBtn" class="flex-1 md:flex-none px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2">
-                                    <i data-lucide="crown" class="w-5 h-5"></i> <span>اجعل الكل PERFECT</span>
-                                </button>
-                                <button id="solveAllBtn" class="flex-1 md:flex-none px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2">
-                                    <i data-lucide="play" class="w-5 h-5 fill-current"></i> <span>حل الكل (1-42)</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="chaptersGrid"></div>
-                    </main>
-
-                    <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-96 bg-[#0a0a0a] border-t border-slate-700 z-50 flex-col shadow-2xl hidden">
-                        <div class="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800">
-                            <div class="flex items-center gap-2 text-sm text-slate-300 font-mono">
-                                <i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i>
-                                <span>Live Logs</span>
-                            </div>
-                            <button id="closeLogsBtn" class="text-slate-500 hover:text-white text-2xl">&times;</button>
-                        </div>
-                        <div id="logTerminal" class="flex-1 p-4 overflow-y-auto text-sm"></div>
-                    </div>
-                </div>
-            `;
-            initIcons();
-
-            const grid = document.getElementById('chaptersGrid');
-            chaptersData.forEach(c => {
-                let badgeHtml = '';
-                if (c.badge === 'PERFECT') badgeHtml = `<span class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20">PERFECT</span>`;
-                else if (c.badge === 'CLEAR') badgeHtml = `<span class="text-[10px] font-black text-blue-400 bg-blue-400/10 px-2 py-1 rounded-md border border-blue-400/20">CLEAR</span>`;
-                else badgeHtml = `<span class="text-[10px] font-black text-rose-400 bg-rose-400/10 px-2 py-1 rounded-md border border-rose-400/20">RETRY</span>`;
-
-                let div = document.createElement('div');
-                div.className = `chapter-card glass rounded-2xl p-4 flex flex-col relative overflow-hidden group border-t-4 ${c.badge === 'PERFECT' ? 'border-t-emerald-500' : (c.badge === 'CLEAR' ? 'border-t-blue-500' : 'border-t-slate-600')}`;
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-bold text-slate-400 bg-slate-900/50 px-2 py-1 rounded-md">مرحلة ${c.num}</span>
-                        ${badgeHtml}
-                    </div>
-                    <div class="flex items-center justify-center py-4">
-                        ${c.badge === 'PERFECT' ? `
-                            <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <i data-lucide="crown" class="w-6 h-6 text-emerald-400"></i>
-                            </div>
-                        ` : `
-                            <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <i data-lucide="play" class="w-5 h-5 text-slate-400 fill-current"></i>
-                            </div>
-                        `}
-                    </div>
-                    <div class="flex justify-between items-center mt-auto pt-2 border-t border-slate-700/50">
-                        <div class="flex items-center gap-1 text-xs text-slate-400">
-                            <i data-lucide="book-open" class="w-3 h-3"></i> <span>${c.score}/${c.total_q}</span>
-                        </div>
-                        <div class="flex items-center gap-1 text-xs font-bold text-blue-400">
-                            <span>${c.diamond}</span> <i data-lucide="diamond" class="w-3 h-3 fill-current"></i>
-                        </div>
-                    </div>
-                `;
-                div.addEventListener('click', () => solveOne(c.id));
-                grid.appendChild(div);
-            });
-            initIcons();
-
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                currentCookies = ''; chaptersData = [];
-                renderLogin();
-            });
-
-            const logsContainer = document.getElementById('logsContainer');
-            document.getElementById('toggleLogsBtn').addEventListener('click', () => {
-                logsContainer.classList.toggle('hidden');
-                logsContainer.classList.toggle('flex');
-            });
-            document.getElementById('closeLogsBtn').addEventListener('click', () => {
-                logsContainer.classList.add('hidden');
-                logsContainer.classList.remove('flex');
-            });
-
-            document.getElementById('makePerfectBtn').addEventListener('click', () => {
-                if(!window.confirm("هيتم إعادة حل كل المراحل اللي مش PERFECT. متأكد؟")) return;
-                logsContainer.classList.remove('hidden');
-                logsContainer.classList.add('flex');
-                streamResponse(`/api/solve_all?mode=perfect&cookies=${encodeURIComponent(currentCookies)}`);
-            });
-
-            document.getElementById('solveAllBtn').addEventListener('click', () => {
-                if(!window.confirm("هل أنت متأكد من حل جميع المراحل 1-42؟")) return;
-                logsContainer.classList.remove('hidden');
-                logsContainer.classList.add('flex');
-                streamResponse(`/api/solve_all?mode=all&cookies=${encodeURIComponent(currentCookies)}`);
-            });
-        }
-
-        async function streamResponse(url) {
-            const terminal = document.getElementById('logTerminal');
-            terminal.innerHTML = '<p class="text-blue-400">جاري الاتصال بالبث المباشر...</p>';
+    try {
+        // Login Request to Portal
+        let loginResStr = AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd}));
+        let loginRes = JSON.parse(loginResStr);
+        
+        if (loginRes.status === 200 || loginRes.status === 302) {
+            // Save cookies
+            currentCookies = AndroidBridge.getLastCookies();
+            AndroidBridge.setCookies(currentCookies);
             
-            try {
-                const response = await fetch(url);
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                terminal.innerHTML = '';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n\n');
-                    
-                    for (let line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const dataStr = line.replace('data: ', '');
-                            if (!dataStr.trim()) continue;
-                            
-                            const data = JSON.parse(dataStr);
-                            if (data.msg === 'DONE') {
-                                refreshData();
-                                return;
-                            }
-                            
-                            let p = document.createElement('div');
-                            p.className = `log-${data.type || 'info'}`;
-                            p.innerText = data.msg;
-                            terminal.appendChild(p);
-                            
-                            if (terminal.scrollHeight - terminal.scrollTop - terminal.clientHeight < 100) {
-                                terminal.scrollTop = terminal.scrollHeight;
-                            }
-                        }
-                    }
-                }
-            } catch (err) {
-                terminal.innerHTML += `<p class="log-error mt-2">انقطع الاتصال: ${err.message}</p>`;
-            }
-        }
-
-        function solveOne(chapId) {
-            const logsContainer = document.getElementById('logsContainer');
-            logsContainer.classList.remove('hidden');
-            logsContainer.classList.add('flex');
-            streamResponse(`/api/solve_one?cookies=${encodeURIComponent(currentCookies)}&chapter_id=${chapId}`);
-        }
-
-        async function refreshData() {
-            const res = await fetch('/api/status', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({cookies: currentCookies})
-            });
-            const data = await res.json();
-            if(res.ok) {
-                chaptersData = data.chapters;
-                document.getElementById('totalDiamonds').innerText = data.total_diamonds;
-                renderDashboard(data);
-            }
-        }
-
-        renderLogin();
-    </script>
-
-<script>
-const BASE = "https://me-tp.qureo.education";
-
-function api(method, url, body) {
-    if (url.startsWith("/api")) url = BASE + url;
-    let bodyStr = body ? JSON.stringify(body) : null;
-    let resStr = AndroidBridge.request(method, url, bodyStr);
-    try { return JSON.parse(resStr); } catch(e) { return { error: "Parse error: " + resStr.substring(0, 50) }; }
-}
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-async function solveTwoPass(chap_id, questions, test_type, log) {
-    let total = questions.length;
-    let prefix = test_type === "test" ? "test" : "review";
-    let endpoint = `/api/study/students/${prefix}-questions`;
-    log(`\n🔵 PASS 1/2: إرسال إجابات مبدئية (${total} سؤال)...`, "header");
-    api("DELETE", `/api/study/students/chapters/${chap_id}/test`);
-    api("PUT", `/api/study/students/chapters/${chap_id}/test`);
-    await sleep(1000);
-    for (let idx = 0; idx < questions.length; idx++) {
-        let q = questions[idx];
-        if (q.type === "choice") api("PUT", `${endpoint}/${q.id}/answer/choice`, { choice_id: parseInt(q.id + "1") });
-        else api("PUT", `${endpoint}/${q.id}/answer/description`, { answer_code: "let _x = 0;" });
-        log(`  [${idx+1}/${total}] Q${q.id} — sent dummy`, "info");
-        await sleep(500);
-    }
-    await sleep(2000);
-    log("جلب الإجابات الصحيحة من السيرفر...", "info");
-    let r1 = api("GET", `/api/study/students/chapters/${chap_id}/${prefix}/result`);
-    let answers = {};
-    if (r1 && !r1.error) {
-        let result1 = r1.result || r1;
-        if (result1.choice_results) {
-            for (let cr of result1.choice_results) {
-                let qid = cr.question_id;
-                let correct = (cr.choices || []).find(c => c.correct);
-                if (qid && correct && correct.choice) answers[qid] = { choice_id: correct.choice.id, text: correct.choice.content };
-            }
-        }
-        if (result1.description_results) {
-            for (let dr of result1.description_results) {
-                if (dr.question_id && dr.model_answer) answers[dr.question_id] = { answer_code: dr.model_answer };
-            }
-        }
-    }
-    log(`\n🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...`, "header");
-    await sleep(2000);
-    api("DELETE", `/api/study/students/chapters/${chap_id}/test`);
-    api("PUT", `/api/study/students/chapters/${chap_id}/test`);
-    await sleep(1000);
-    for (let idx = 0; idx < questions.length; idx++) {
-        let q = questions[idx];
-        if (answers[q.id]) {
-            let ans = answers[q.id];
-            if (q.type === "choice") {
-                log(`  [${idx+1}/${total}] Q${q.id} ✅ إرسال: ${(ans.text||"").substring(0,50)}`, "success");
-                api("PUT", `${endpoint}/${q.id}/answer/choice`, { choice_id: ans.choice_id });
+            // Verify
+            let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
+            let verify = JSON.parse(verifyStr);
+            
+            if (verify.status === 200) {
+                let me = JSON.parse(verify.body);
+                document.getElementById("user-name").innerText = me.name || "Student";
+                
+                // Fetch diamonds
+                let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
+                let d = JSON.parse(dStr);
+                if (d.status === 200) document.getElementById("diamonds").innerText = JSON.parse(d.body);
+                
+                document.getElementById("login-screen").classList.remove("active");
+                document.getElementById("dashboard").classList.add("active");
+                log("✅ تم تسجيل الدخول بنجاح!", "success");
             } else {
-                log(`  [${idx+1}/${total}] Q${q.id} ✅ إرسال الكود`, "success");
-                api("PUT", `${endpoint}/${q.id}/answer/description`, { answer_code: ans.answer_code });
+                showError("فشل التحقق من الصلاحيات (HTTP " + verify.status + ")");
             }
-        } else log(`  [${idx+1}/${total}] Q${q.id} ❌ لم يتم العثور على الإجابة`, "error");
-        await sleep(500);
+        } else {
+            showError("بيانات مرفوضة. تأكد من الـ ID والباسورد.");
+        }
+    } catch(e) {
+        showError("خطأ في الاتصال: " + e.message);
+    } finally {
+        showOverlay(false);
+        document.getElementById("login-btn").disabled = false;
     }
-    log("\nالتحقق من النتيجة النهائية...", "info");
-    await sleep(2000);
-    let r_final = api("GET", `/api/study/students/chapters/${chap_id}/${prefix}/result`);
-    let final_score = 0;
-    if (r_final && !r_final.error) final_score = (r_final.result || r_final).correct_count || 0;
-    log(`🎉 انتهى! النتيجة النهائية: ${final_score}/${total}`, final_score === total ? "success" : "warn");
 }
 
-async function solveChapter(chap_id, log) {
-    log(`جلب بيانات الفصل ${chap_id}...`, "header");
-    let r = api("GET", `/api/study/chapters/${chap_id}`);
-    if (!r || r.error) { log("فشل جلب الفصل.", "error"); return; }
-    let lectures = r.lectures || [];
-    let test_type = (r.chapter && r.chapter.test_type) || "test";
-    log(`النوع: ${test_type} | الدروس: ${lectures.length}`, "info");
-    for (let lec of lectures) {
-        log(`\n▶ بدء الدرس: ${lec.id}`, "header");
-        api("PUT", `/api/study/students/lectures/${lec.id}`);
-        await sleep(500);
-        let lr = api("GET", `/api/study/lectures/${lec.id}`);
-        if (lr && lr.talks) {
-            for (let t of lr.talks) {
-                if (t.type === 'try') {
-                    let try_data = (t.body && t.body.codes && t.body.codes[0]) || {};
-                    if (try_data.model_answer) {
-                        log(`  Q: ${(t.body.question.text||"").substring(0,60)}...`, "q");
-                        log(`  A: ${try_data.model_answer.substring(0,60)}...`, "a");
-                        api("PUT", `/api/study/students/lecture-talks/${t.id}`, { value: { try: { lang: try_data.lang || 'javascript', answer: try_data.model_answer } } });
-                        await sleep(500);
-                    }
-                }
-            }
+async function startSolving(mode) {
+    if (isRunning) return;
+    isRunning = true;
+    document.getElementById("start-btn").disabled = true;
+    document.getElementById("cancel-btn").disabled = false;
+    document.getElementById("log").innerHTML = "";
+    
+    log("🚀 بدء الحل...", "header");
+    try {
+        // Fetch progress
+        let cStr = AndroidBridge.request("GET", BASE + "/api/study/students/sections/5/chapters", null);
+        let c = JSON.parse(cStr);
+        let progressMap = {};
+        if (c.status === 200) {
+            let arr = JSON.parse(c.body);
+            arr.forEach(item => progressMap[item.chapter_id] = item);
         }
-        api("PUT", `/api/study/students/lectures/${lec.id}/complete`);
-        log(`  ✅ تم إنهاء الدرس ${lec.id}`, "success");
-        await sleep(500);
-    }
-    if (lectures.length > 0) { log("انتظار 3 ثواني عشان السيرفر يحدث...", "info"); await sleep(3000); }
-    log("\nجلب الأسئلة...", "info");
-    let rq = api("GET", `/api/study/chapters/${chap_id}/test`);
-    if (!rq || rq.error) { log(`فشل جلب الأسئلة`, "error"); return; }
-    let questions = [];
-    if (Array.isArray(rq)) {
-        for (let q of rq) if (q.question && q.question.id) questions.push({ id: q.question.id, type: q.question.type });
-    }
-    if (questions.length === 0) { log("لم يتم العثور على أسئلة.", "warn"); return; }
-    await solveTwoPass(chap_id, questions, test_type, log);
-}
-
-const originalFetch = window.fetch;
-window.fetch = async function(url, options) {
-    if (typeof url === 'string' && url.includes("/api/status")) {
-        try {
-            let body = JSON.parse(options.body);
-            AndroidBridge.setCookies(body.cookies);
-            let u = api("GET", "/api/study/students/me");
-            if (u.error || !u.id) return new Response(JSON.stringify({error: "فشل الاتصال (تأكد من الكوكيز)"}), {status: 400});
-            let d = api("GET", "/api/study/students/courses/javascript_ar/diamond");
-            let c = api("GET", "/api/study/students/sections/5/chapters");
-            let progress_map = {};
-            if (Array.isArray(c)) c.forEach(item => progress_map[item.chapter_id] = item);
-            let chaps_info = api("GET", "/api/study/sections/5");
-            let q_map = {};
-            if (chaps_info && chaps_info.chapters) chaps_info.chapters.forEach(ch => q_map[ch.id] = ch.question_count || 5);
-            let chapters = [];
-            for (let i = 1; i <= 42; i++) {
-                let chap_id = 90000 + i;
-                let info = progress_map[chap_id] || {};
-                let score = info.best_correct_count || 0;
-                let q_count = q_map[chap_id] || 5;
-                let badge = score === q_count && q_count > 0 ? "PERFECT" : (score > 0 ? "CLEAR" : "RETRY");
-                chapters.push({ id: chap_id, num: i, completed: !!info.completed_at, score: score, total_q: q_count, diamond: info.diamond||0, badge: badge });
-            }
-            return new Response(JSON.stringify({ user_id: u.id, name: u.name, total_diamonds: (typeof d === 'number' ? d : 0), chapters: chapters }), {status: 200, headers: {'Content-Type': 'application/json'}});
-        } catch(e) { return new Response(JSON.stringify({error: e.message}), {status: 500}); }
-    }
-    return originalFetch.apply(this, arguments);
-};
-
-window.EventSource = class {
-    constructor(url) {
-        this.url = url; this.onmessage = null; this.onerror = null;
-        setTimeout(() => this.run(), 100);
-    }
-    emit(msg, type) { if (this.onmessage) this.onmessage({ data: JSON.stringify({msg: msg, type: type}) }); }
-    async run() {
-        try {
-            let urlObj = new URL(this.url, "http://localhost");
-            AndroidBridge.setCookies(urlObj.searchParams.get('cookies') || "");
-            if (urlObj.pathname === "/api/solve_one") {
-                this.emit(`🚀 بدء المرحلة ${urlObj.searchParams.get('chapter_id')}...`, "header");
-                await solveChapter(parseInt(urlObj.searchParams.get('chapter_id')), (msg, type) => this.emit(msg, type));
-                this.emit("DONE", "done");
-            } else if (urlObj.pathname === "/api/solve_all") {
-                let mode = urlObj.searchParams.get('mode') || 'all';
-                let c = api("GET", "/api/study/students/sections/5/chapters");
-                let progress_map = {};
-                if (Array.isArray(c)) c.forEach(item => progress_map[item.chapter_id] = item);
-                let chaps_info = api("GET", "/api/study/sections/5");
-                let q_map = {};
-                if (chaps_info && chaps_info.chapters) chaps_info.chapters.forEach(ch => q_map[ch.id] = ch.question_count || 5);
-                let targets = [];
-                for (let i = 1; i <= 42; i++) {
-                    let chap_id = 90000 + i;
-                    let info = progress_map[chap_id] || {};
-                    if (mode === 'perfect') { if ((info.best_correct_count||0) < (q_map[chap_id]||5)) targets.push({ id: chap_id, num: i }); }
-                    else targets.push({ id: chap_id, num: i });
-                }
-                if (targets.length === 0) { this.emit("🎉 كل المراحل PERFECT بالفعل!", "success"); return; }
-                this.emit(`🚀 بدء حل ${targets.length} مرحلة...`, "header");
-                for (let t of targets) {
-                    this.emit(`\n========== المرحلة ${t.num} ==========`, "header");
-                    await solveChapter(t.id, (msg, type) => this.emit(msg, type));
-                    await sleep(1000);
-                }
-                this.emit("🎉🎉🎉 انتهى!", "done");
-            }
-        } catch(e) { if (this.onerror) this.onerror(e); }
-    }
-    close() {}
-};
-</script>
-
-<script>
-const BASE = "https://me-tp.qureo.education";
-
-function api(method, url, body) {
-    if (url.startsWith("/api")) url = BASE + url;
-    let bodyStr = body ? JSON.stringify(body) : null;
-    let resStr = AndroidBridge.request(method, url, bodyStr);
-    try { return JSON.parse(resStr); } catch(e) { return { error: "Parse error: " + resStr.substring(0, 50) }; }
-}
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-async function solveTwoPass(chap_id, questions, test_type, log) {
-    let total = questions.length;
-    let prefix = test_type === "test" ? "test" : "review";
-    let endpoint = `/api/study/students/${prefix}-questions`;
-    log(`\n🔵 PASS 1/2: إرسال إجابات مبدئية (${total} سؤال)...`, "header");
-    api("DELETE", `/api/study/students/chapters/${chap_id}/test`);
-    api("PUT", `/api/study/students/chapters/${chap_id}/test`);
-    await sleep(1000);
-    for (let idx = 0; idx < questions.length; idx++) {
-        let q = questions[idx];
-        if (q.type === "choice") api("PUT", `${endpoint}/${q.id}/answer/choice`, { choice_id: parseInt(q.id + "1") });
-        else api("PUT", `${endpoint}/${q.id}/answer/description`, { answer_code: "let _x = 0;" });
-        log(`  [${idx+1}/${total}] Q${q.id} — sent dummy`, "info");
-        await sleep(500);
-    }
-    await sleep(2000);
-    log("جلب الإجابات الصحيحة من السيرفر...", "info");
-    let r1 = api("GET", `/api/study/students/chapters/${chap_id}/${prefix}/result`);
-    let answers = {};
-    if (r1 && !r1.error) {
-        let result1 = r1.result || r1;
-        if (result1.choice_results) {
-            for (let cr of result1.choice_results) {
-                let qid = cr.question_id;
-                let correct = (cr.choices || []).find(c => c.correct);
-                if (qid && correct && correct.choice) answers[qid] = { choice_id: correct.choice.id, text: correct.choice.content };
-            }
+        
+        let chapsStr = AndroidBridge.request("GET", BASE + "/api/study/sections/5", null);
+        let chaps = JSON.parse(chapsStr);
+        let qMap = {};
+        if (chaps.status === 200) {
+            let chObj = JSON.parse(chaps.body);
+            if (chObj.chapters) chObj.chapters.forEach(ch => qMap[ch.id] = ch.question_count || 5);
         }
-        if (result1.description_results) {
-            for (let dr of result1.description_results) {
-                if (dr.question_id && dr.model_answer) answers[dr.question_id] = { answer_code: dr.model_answer };
-            }
-        }
-    }
-    log(`\n🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...`, "header");
-    await sleep(2000);
-    api("DELETE", `/api/study/students/chapters/${chap_id}/test`);
-    api("PUT", `/api/study/students/chapters/${chap_id}/test`);
-    await sleep(1000);
-    for (let idx = 0; idx < questions.length; idx++) {
-        let q = questions[idx];
-        if (answers[q.id]) {
-            let ans = answers[q.id];
-            if (q.type === "choice") {
-                log(`  [${idx+1}/${total}] Q${q.id} ✅ إرسال: ${(ans.text||"").substring(0,50)}`, "success");
-                api("PUT", `${endpoint}/${q.id}/answer/choice`, { choice_id: ans.choice_id });
+
+        let targets = [];
+        for (let i = 1; i <= 42; i++) {
+            let chapId = 90000 + i;
+            let info = progressMap[chapId] || {};
+            let score = info.best_correct_count || 0;
+            let qCount = qMap[chapId] || 5;
+            
+            if (mode === 'perfect') {
+                if (score < qCount) targets.push({id: chapId, num: i});
             } else {
-                log(`  [${idx+1}/${total}] Q${q.id} ✅ إرسال الكود`, "success");
-                api("PUT", `${endpoint}/${q.id}/answer/description`, { answer_code: ans.answer_code });
+                targets.push({id: chapId, num: i});
             }
-        } else log(`  [${idx+1}/${total}] Q${q.id} ❌ لم يتم العثور على الإجابة`, "error");
-        await sleep(500);
+        }
+        
+        if (targets.length === 0) {
+            log("🎉 كل المراحل مكتملة بالفعل!", "success");
+            return;
+        }
+        
+        log(`🚀 جاري حل ${targets.length} مرحلة...`, "header");
+        for (let t of targets) {
+            if (!isRunning) break;
+            log(`\n========== المرحلة ${t.num} ==========`, "header");
+            await solveChapter(t.id);
+        }
+        
+        if (isRunning) log("🎉🎉🎉 انتهى!", "done");
+        
+    } catch(e) {
+        log("❌ خطأ: " + e.message, "error");
+    } finally {
+        isRunning = false;
+        document.getElementById("start-btn").disabled = false;
+        document.getElementById("cancel-btn").disabled = true;
     }
-    log("\nالتحقق من النتيجة النهائية...", "info");
-    await sleep(2000);
-    let r_final = api("GET", `/api/study/students/chapters/${chap_id}/${prefix}/result`);
-    let final_score = 0;
-    if (r_final && !r_final.error) final_score = (r_final.result || r_final).correct_count || 0;
-    log(`🎉 انتهى! النتيجة النهائية: ${final_score}/${total}`, final_score === total ? "success" : "warn");
 }
 
-async function solveChapter(chap_id, log) {
-    log(`جلب بيانات الفصل ${chap_id}...`, "header");
-    let r = api("GET", `/api/study/chapters/${chap_id}`);
-    if (!r || r.error) { log("فشل جلب الفصل.", "error"); return; }
-    let lectures = r.lectures || [];
-    let test_type = (r.chapter && r.chapter.test_type) || "test";
-    log(`النوع: ${test_type} | الدروس: ${lectures.length}`, "info");
+function cancelSolving() {
+    isRunning = false;
+    log("⏹️ تم إلغاء العملية.", "warn");
+}
+
+async function solveChapter(chapId) {
+    if (!isRunning) return;
+    let rStr = AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId, null);
+    let r = JSON.parse(rStr);
+    if (r.status !== 200) { log("فشل جلب الفصل", "error"); return; }
+    
+    let data = JSON.parse(r.body);
+    let lectures = data.lectures || [];
+    let testType = (data.chapter && data.chapter.test_type) || "test";
+    
     for (let lec of lectures) {
-        log(`\n▶ بدء الدرس: ${lec.id}`, "header");
-        api("PUT", `/api/study/students/lectures/${lec.id}`);
-        await sleep(500);
-        let lr = api("GET", `/api/study/lectures/${lec.id}`);
-        if (lr && lr.talks) {
-            for (let t of lr.talks) {
+        if (!isRunning) return;
+        let lecId = lec.id;
+        log(`▶ بدء الدرس: ${lec.title}`, "header");
+        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId, null);
+        await sleep(200);
+        
+        let lrStr = AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lecId, null);
+        let lr = JSON.parse(lrStr);
+        if (lr.status === 200) {
+            let lrData = JSON.parse(lr.body);
+            for (let t of lrData.talks || []) {
                 if (t.type === 'try') {
-                    let try_data = (t.body && t.body.codes && t.body.codes[0]) || {};
-                    if (try_data.model_answer) {
-                        log(`  Q: ${(t.body.question.text||"").substring(0,60)}...`, "q");
-                        log(`  A: ${try_data.model_answer.substring(0,60)}...`, "a");
-                        api("PUT", `/api/study/students/lecture-talks/${t.id}`, { value: { try: { lang: try_data.lang || 'javascript', answer: try_data.model_answer } } });
-                        await sleep(500);
+                    let tryData = (t.body && t.body.codes && t.body.codes[0]) || {};
+                    if (tryData.model_answer) {
+                        AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: tryData.lang || 'javascript', answer: tryData.model_answer}}}));
+                        await sleep(200);
                     }
                 }
             }
         }
-        api("PUT", `/api/study/students/lectures/${lec.id}/complete`);
-        log(`  ✅ تم إنهاء الدرس ${lec.id}`, "success");
-        await sleep(500);
+        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId + "/complete", null);
+        log(`  ✅ تم إنهاء الدرس`, "success");
+        await sleep(200);
     }
-    if (lectures.length > 0) { log("انتظار 3 ثواني عشان السيرفر يحدث...", "info"); await sleep(3000); }
-    log("\nجلب الأسئلة...", "info");
-    let rq = api("GET", `/api/study/chapters/${chap_id}/test`);
-    if (!rq || rq.error) { log(`فشل جلب الأسئلة`, "error"); return; }
+    
+    if (!isRunning) return;
+    log("جلب الأسئلة...", "info");
+    let qStr = AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId + "/test", null);
+    let q = JSON.parse(qStr);
+    if (q.status !== 200) { log("فشل جلب الأسئلة", "error"); return; }
+    
     let questions = [];
-    if (Array.isArray(rq)) {
-        for (let q of rq) if (q.question && q.question.id) questions.push({ id: q.question.id, type: q.question.type });
+    let qData = JSON.parse(q.body);
+    if (Array.isArray(qData)) {
+        for (let item of qData) if (item.question && item.question.id) questions.push({id: item.question.id, type: item.question.type});
     }
-    if (questions.length === 0) { log("لم يتم العثور على أسئلة.", "warn"); return; }
-    await solveTwoPass(chap_id, questions, test_type, log);
+    if (questions.length === 0) { log("لا أسئلة", "warn"); return; }
+    
+    await solveTwoPass(chapId, questions, testType);
 }
 
-const originalFetch = window.fetch;
-window.fetch = async function(url, options) {
-    if (typeof url === 'string' && url.includes("/api/status")) {
-        try {
-            let body = JSON.parse(options.body);
-            AndroidBridge.setCookies(body.cookies);
-            let u = api("GET", "/api/study/students/me");
-            if (u.error || !u.id) return new Response(JSON.stringify({error: "فشل الاتصال (تأكد من الكوكيز)"}), {status: 400});
-            let d = api("GET", "/api/study/students/courses/javascript_ar/diamond");
-            let c = api("GET", "/api/study/students/sections/5/chapters");
-            let progress_map = {};
-            if (Array.isArray(c)) c.forEach(item => progress_map[item.chapter_id] = item);
-            let chaps_info = api("GET", "/api/study/sections/5");
-            let q_map = {};
-            if (chaps_info && chaps_info.chapters) chaps_info.chapters.forEach(ch => q_map[ch.id] = ch.question_count || 5);
-            let chapters = [];
-            for (let i = 1; i <= 42; i++) {
-                let chap_id = 90000 + i;
-                let info = progress_map[chap_id] || {};
-                let score = info.best_correct_count || 0;
-                let q_count = q_map[chap_id] || 5;
-                let badge = score === q_count && q_count > 0 ? "PERFECT" : (score > 0 ? "CLEAR" : "RETRY");
-                chapters.push({ id: chap_id, num: i, completed: !!info.completed_at, score: score, total_q: q_count, diamond: info.diamond||0, badge: badge });
-            }
-            return new Response(JSON.stringify({ user_id: u.id, name: u.name, total_diamonds: (typeof d === 'number' ? d : 0), chapters: chapters }), {status: 200, headers: {'Content-Type': 'application/json'}});
-        } catch(e) { return new Response(JSON.stringify({error: e.message}), {status: 500}); }
+async function solveTwoPass(chapId, questions, testType) {
+    let total = questions.length;
+    let prefix = testType === "test" ? "test" : "review";
+    let ep = "/api/study/students/" + prefix + "-questions";
+    
+    log(`🔵 PASS 1/2: إرسال إجابات مبدئية (${total} سؤال)...`, "header");
+    AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+    AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+    await sleep(500);
+    
+    for (let item of questions) {
+        if (!isRunning) return;
+        if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: parseInt(item.id + "1")}));
+        else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x=0;"}));
+        log(`  Q${item.id} — sent dummy`, "info");
+        await sleep(200);
     }
-    return originalFetch.apply(this, arguments);
-};
+    await sleep(1000);
+    
+    log("جلب الإجابات الصحيحة...", "info");
+    let r1Str = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
+    let answers = {};
+    let r1 = JSON.parse(r1Str);
+    if (r1.status === 200) {
+        let res = JSON.parse(r1.body).result || {};
+        for (let cr of res.choice_results || []) {
+            let correct = (cr.choices || []).find(c => c.correct);
+            if (cr.question_id && correct && correct.choice) answers[cr.question_id] = {choice_id: correct.choice.id};
+        }
+        for (let dr of res.description_results || []) {
+            if (dr.question_id && dr.model_answer) answers[dr.question_id] = {answer_code: dr.model_answer};
+        }
+    }
+    
+    log(`🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...`, "header");
+    AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+    AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+    await sleep(500);
+    
+    for (let item of questions) {
+        if (!isRunning) return;
+        if (answers[item.id]) {
+            let ans = answers[item.id];
+            if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify(ans));
+            else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify(ans));
+            log(`  Q${item.id} ✅`, "success");
+        } else log(`  Q${item.id} ❌`, "error");
+        await sleep(200);
+    }
+    await sleep(1000);
+    
+    let rfStr = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
+    let rf = JSON.parse(rfStr);
+    let score = 0;
+    if (rf.status === 200) score = (JSON.parse(rf.body).result || {}).correct_count || 0;
+    log(`🎉 النتيجة: ${score}/${total}`, score === total ? "success" : "warn");
+}
 
-window.EventSource = class {
-    constructor(url) {
-        this.url = url; this.onmessage = null; this.onerror = null;
-        setTimeout(() => this.run(), 100);
-    }
-    emit(msg, type) { if (this.onmessage) this.onmessage({ data: JSON.stringify({msg: msg, type: type}) }); }
-    async run() {
-        try {
-            let urlObj = new URL(this.url, "http://localhost");
-            AndroidBridge.setCookies(urlObj.searchParams.get('cookies') || "");
-            if (urlObj.pathname === "/api/solve_one") {
-                this.emit(`🚀 بدء المرحلة ${urlObj.searchParams.get('chapter_id')}...`, "header");
-                await solveChapter(parseInt(urlObj.searchParams.get('chapter_id')), (msg, type) => this.emit(msg, type));
-                this.emit("DONE", "done");
-            } else if (urlObj.pathname === "/api/solve_all") {
-                let mode = urlObj.searchParams.get('mode') || 'all';
-                let c = api("GET", "/api/study/students/sections/5/chapters");
-                let progress_map = {};
-                if (Array.isArray(c)) c.forEach(item => progress_map[item.chapter_id] = item);
-                let chaps_info = api("GET", "/api/study/sections/5");
-                let q_map = {};
-                if (chaps_info && chaps_info.chapters) chaps_info.chapters.forEach(ch => q_map[ch.id] = ch.question_count || 5);
-                let targets = [];
-                for (let i = 1; i <= 42; i++) {
-                    let chap_id = 90000 + i;
-                    let info = progress_map[chap_id] || {};
-                    if (mode === 'perfect') { if ((info.best_correct_count||0) < (q_map[chap_id]||5)) targets.push({ id: chap_id, num: i }); }
-                    else targets.push({ id: chap_id, num: i });
-                }
-                if (targets.length === 0) { this.emit("🎉 كل المراحل PERFECT بالفعل!", "success"); return; }
-                this.emit(`🚀 بدء حل ${targets.length} مرحلة...`, "header");
-                for (let t of targets) {
-                    this.emit(`\n========== المرحلة ${t.num} ==========`, "header");
-                    await solveChapter(t.id, (msg, type) => this.emit(msg, type));
-                    await sleep(1000);
-                }
-                this.emit("🎉🎉🎉 انتهى!", "done");
-            }
-        } catch(e) { if (this.onerror) this.onerror(e); }
-    }
-    close() {}
-};
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function logout() { location.reload(); }
 </script>
 </body>
 </html>
