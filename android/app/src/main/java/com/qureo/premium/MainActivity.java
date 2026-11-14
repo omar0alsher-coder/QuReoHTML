@@ -16,19 +16,19 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private String currentSessionCookies = "";
+    private final Map<String, String> cookies = new LinkedHashMap<>();
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // Full Screen
+
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -39,101 +39,131 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
         );
 
-        // التغلب على مشاكل الـ SSL
         try {
-            javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[]{
+            javax.net.ssl.TrustManager[] trustAll = new javax.net.ssl.TrustManager[]{
                 new javax.net.ssl.X509TrustManager() {
                     public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] c, String a) {}
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] c, String a) {}
                 }
             };
             javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            sc.init(null, trustAll, new java.security.SecureRandom());
             javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-            javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-        } catch (Exception e) {}
+            javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier((h, s) -> true);
+        } catch (Exception ignored) {}
 
         webView = new WebView(this);
         setContentView(webView);
 
-        WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setAllowFileAccessFromFileURLs(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        WebSettings s = webView.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setAllowFileAccessFromFileURLs(true);
+        s.setAllowUniversalAccessFromFileURLs(true);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
-        webView.addJavascriptInterface(new CookieBridge(), "AndroidBridge");
+        webView.addJavascriptInterface(new Bridge(), "AndroidBridge");
         webView.setWebViewClient(new WebViewClient());
         webView.loadUrl("file:///android_asset/index.html");
     }
 
-    public class CookieBridge {
+    public class Bridge {
         @JavascriptInterface
-        public void setCookies(String cookies) { currentSessionCookies = cookies; }
-        
+        public void clearCookies() { cookies.clear(); }
+
         @JavascriptInterface
-        public String getLastCookies() { return currentSessionCookies; }
-        
+        public void setCookie(String name, String value) {
+            if (name != null && !name.isEmpty()) cookies.put(name, value == null ? "" : value);
+        }
+
         @JavascriptInterface
-        public void clearCookies() { currentSessionCookies = ""; }
+        public String getLastCookies() { return serializeCookies(); }
 
         @JavascriptInterface
         public String request(String method, String urlStr, String body) {
+            HttpURLConnection conn = null;
             try {
                 URL url = new URL(urlStr);
                 String host = url.getHost();
                 String origin = "https://" + host;
                 String referer = host.contains("portal") ? origin + "/login" : origin + "/";
 
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod(method);
-                conn.setInstanceFollowRedirects(false); 
+                conn.setInstanceFollowRedirects(false);
+                conn.setConnectTimeout(30000);
+                conn.setReadTimeout(30000);
+                conn.setRequestProperty("Accept", "application/json, text/plain, */*");
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setRequestProperty("X-Requested-With", "mark.via.gp");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36");
                 conn.setRequestProperty("Origin", origin);
                 conn.setRequestProperty("Referer", referer);
-                conn.setRequestProperty("Accept", "*/*");
 
-                if (!currentSessionCookies.isEmpty()) conn.setRequestProperty("Cookie", currentSessionCookies);
+                String cookieStr = serializeCookies();
+                if (!cookieStr.isEmpty()) conn.setRequestProperty("Cookie", cookieStr);
 
-                if (body != null && !body.isEmpty() && (method.equals("POST") || method.equals("PUT"))) {
+                if (body != null && !body.isEmpty() && (method.equals("POST") || method.equals("PUT") || method.equals("PATCH"))) {
                     conn.setDoOutput(true);
                     OutputStream os = conn.getOutputStream();
                     os.write(body.getBytes("UTF-8"));
-                    os.flush(); os.close();
+                    os.flush();
+                    os.close();
                 }
 
                 int code = conn.getResponseCode();
 
-                // سحب الكوكيز
-                Map<String, List<String>> headerFields = conn.getHeaderFields();
-                List<String> cookiesHeader = headerFields.get("Set-Cookie");
-                if (cookiesHeader == null) cookiesHeader = headerFields.get("set-cookie");
-
-                if (cookiesHeader != null) {
-                    for (String cookie : cookiesHeader) {
-                        String c = cookie.split(";")[0].trim();
-                        if (!c.isEmpty() && !currentSessionCookies.contains(c)) currentSessionCookies += c + "; ";
-                    }
+                Map<String, List<String>> headers = conn.getHeaderFields();
+                List<String> setCookies = headers.get("Set-Cookie");
+                if (setCookies == null) setCookies = headers.get("set-cookie");
+                if (setCookies != null) {
+                    for (String c : setCookies) mergeCookie(c);
                 }
 
-                InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
-                String response = "";
+                InputStream is;
+                if (code >= 200 && code < 400) {
+                    try { is = conn.getInputStream(); } catch (Exception e) { is = null; }
+                } else {
+                    is = conn.getErrorStream();
+                }
+
+                StringBuilder sb = new StringBuilder();
                 if (is != null) {
                     BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-                    StringBuilder resp = new StringBuilder();
                     String line;
-                    while ((line = br.readLine()) != null) resp.append(line);
+                    while ((line = br.readLine()) != null) sb.append(line);
                     br.close();
-                    response = resp.toString();
                 }
-                return "{\"status\":" + code + ",\"body\":" + JSONObject.quote(response) + "}";
+
+                return "{\"status\":" + code + ",\"body\":" + JSONObject.quote(sb.toString()) + "}";
             } catch (Exception e) {
-                return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getMessage() + "\"}") + "}";
+                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":" + JSONObject.quote(msg) + "}") + "}";
+            } finally {
+                if (conn != null) conn.disconnect();
             }
         }
+    }
+
+    private void mergeCookie(String setCookie) {
+        if (setCookie == null) return;
+        String[] parts = setCookie.split(";");
+        String pair = parts[0].trim();
+        int eq = pair.indexOf('=');
+        if (eq <= 0) return;
+        String name = pair.substring(0, eq).trim();
+        String value = pair.substring(eq + 1).trim();
+        if (name.isEmpty()) return;
+        cookies.put(name, value);
+    }
+
+    private String serializeCookies() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> e : cookies.entrySet()) {
+            if (sb.length() > 0) sb.append("; ");
+            sb.append(e.getKey()).append("=").append(e.getValue());
+        }
+        return sb.toString();
     }
 }

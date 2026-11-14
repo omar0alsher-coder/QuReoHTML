@@ -25,16 +25,14 @@ button:active { transform: scale(0.97); }
 button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; transform: none; }
 #error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: center; word-break: break-all; }
 #dashboard { justify-content: flex-start; padding: 20px; }
-.header { display: flex; justify-content: space-between; align-items: center; background: #121a2b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45;}
+.header { display: flex; justify-content: space-between; align-items: center; background: #121a2b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45; }
 #log { flex: 1; background: #000; color: #0f0; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45; }
 .btn-row { display: flex; gap: 10px; }
 .btn-row button { flex: 1; margin-top: 0; }
 .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); }
 .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
-#overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(5px); }
-.spinner { width: 60px; height: 60px; border: 5px solid rgba(76,201,240,0.2); border-top-color: #4cc9f0; border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 .btn-spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -98,6 +96,10 @@ function showError(msg) {
     e.innerHTML = msg; e.style.display = "block";
 }
 
+function safeParse(s) {
+    try { return JSON.parse(s); } catch(e) { return null; }
+}
+
 function doLogin() {
     let sid = document.getElementById("student_id").value.trim();
     let pwd = document.getElementById("password").value.trim();
@@ -105,46 +107,54 @@ function doLogin() {
     let btnText = document.getElementById("btn-text");
     let spinner = document.getElementById("btn-spinner");
     let err = document.getElementById("error-msg");
-    
+
     if (!sid || !pwd) return showError("الرجاء إدخال رقم الطالب وكلمة المرور");
-    btn.disabled = true; btnText.innerText = "جاري الدخول..."; spinner.style.display = "block"; err.style.display = "none";
+    btn.disabled = true; btnText.innerText = "جاري الدخول...";
+    spinner.style.display = "block"; err.style.display = "none";
     AndroidBridge.clearCookies();
 
     setTimeout(() => {
         try {
             let loginResStr = AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd}));
-            let loginRes = JSON.parse(loginResStr);
-            
-            if (loginRes.status === 200 || loginRes.status === 302) {
-                let currentCookies = AndroidBridge.getLastCookies();
-                if (!currentCookies.includes("student_selected_content_id")) currentCookies += "; student_selected_content_id=javascript_ar";
-                AndroidBridge.setCookies(currentCookies);
-                
-                let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
-                let verify = JSON.parse(verifyStr);
-                
-                if (verify.status === 200) {
-                    let me = JSON.parse(verify.body);
-                    document.getElementById("user-name").innerText = me.name || "Student";
-                    
-                    let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
-                    let d = JSON.parse(dStr);
-                    if (d.status === 200) document.getElementById("diamonds").innerText = JSON.parse(d.body);
-                    
-                    btnText.innerText = "تم الدخول ✅";
-                    setTimeout(() => {
-                        document.getElementById("login-screen").classList.remove("active");
-                        document.getElementById("dashboard").classList.add("active");
-                        resetBtn(btn, btnText, spinner);
-                    }, 500);
-                } else {
-                    showError("فشل التحقق: HTTP " + verify.status);
-                    resetBtn(btn, btnText, spinner);
-                }
-            } else {
-                showError("بيانات مرفوضة (HTTP " + loginRes.status + ")");
-                resetBtn(btn, btnText, spinner);
+            let loginRes = safeParse(loginResStr);
+            if (!loginRes) { showError("استجابة غير صالحة"); return resetBtn(btn, btnText, spinner); }
+
+            if (loginRes.status !== 200 && loginRes.status !== 302) {
+                let errBody = safeParse(loginRes.body);
+                let msg = errBody && errBody.error ? errBody.error : ("HTTP " + loginRes.status);
+                showError("بيانات مرفوضة: " + msg);
+                return resetBtn(btn, btnText, spinner);
             }
+
+            // Fix cookie
+            AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
+
+            let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
+            let verify = safeParse(verifyStr);
+            if (!verify || verify.status !== 200) {
+                showError("فشل التحقق (HTTP " + (verify ? verify.status : "?") + ")");
+                return resetBtn(btn, btnText, spinner);
+            }
+
+            let me = safeParse(verify.body);
+            if (!me) { showError("بيانات المستخدم تالفة"); return resetBtn(btn, btnText, spinner); }
+            document.getElementById("user-name").innerText = me.name || "Student";
+
+            try {
+                let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
+                let d = safeParse(dStr);
+                if (d && d.status === 200) {
+                    let val = safeParse(d.body);
+                    document.getElementById("diamonds").innerText = (typeof val === "number" || typeof val === "string") ? val : "0";
+                }
+            } catch(_) {}
+
+            btnText.innerText = "تم الدخول ✅";
+            setTimeout(() => {
+                document.getElementById("login-screen").classList.remove("active");
+                document.getElementById("dashboard").classList.add("active");
+                resetBtn(btn, btnText, spinner);
+            }, 400);
         } catch(e) {
             showError("خطأ: " + e.message);
             resetBtn(btn, btnText, spinner);
@@ -163,22 +173,22 @@ async function startSolving(mode) {
     document.getElementById("cancel-btn").disabled = false;
     document.getElementById("log").innerHTML = "";
     log("🚀 بدء الحل...", "header");
-    
+
     try {
         let cStr = AndroidBridge.request("GET", BASE + "/api/study/students/sections/5/chapters", null);
-        let c = JSON.parse(cStr);
+        let c = safeParse(cStr);
         let progressMap = {};
-        if (c.status === 200) {
-            let arr = JSON.parse(c.body);
-            if (Array.isArray(arr)) arr.forEach(item => progressMap[item.chapter_id] = item);
+        if (c && c.status === 200) {
+            let arr = safeParse(c.body);
+            if (Array.isArray(arr)) arr.forEach(item => { if (item && item.chapter_id) progressMap[item.chapter_id] = item; });
         }
-        
+
         let chapsStr = AndroidBridge.request("GET", BASE + "/api/study/sections/5", null);
-        let chaps = JSON.parse(chapsStr);
+        let chaps = safeParse(chapsStr);
         let qMap = {};
-        if (chaps.status === 200) {
-            let chObj = JSON.parse(chaps.body);
-            if (chObj.chapters) chObj.chapters.forEach(ch => qMap[ch.id] = ch.question_count || 5);
+        if (chaps && chaps.status === 200) {
+            let chObj = safeParse(chaps.body);
+            if (chObj && Array.isArray(chObj.chapters)) chObj.chapters.forEach(ch => { if (ch && ch.id) qMap[ch.id] = ch.question_count || 5; });
         }
 
         let targets = [];
@@ -190,16 +200,16 @@ async function startSolving(mode) {
             if (mode === 'perfect') { if (score < qCount) targets.push({id: chapId, num: i}); }
             else targets.push({id: chapId, num: i});
         }
-        
+
         if (targets.length === 0) { log("🎉 كل المراحل مكتملة بالفعل!", "success"); return; }
-        log(`🚀 جاري حل ${targets.length} مرحلة...`, "header");
-        
+        log("🚀 جاري حل " + targets.length + " مرحلة...", "header");
+
         for (let t of targets) {
             if (!isRunning) break;
-            log(`\n========== المرحلة ${t.num} ==========`, "header");
+            log("\n========== المرحلة " + t.num + " ==========", "header");
             await solveChapter(t.id);
         }
-        if (isRunning) log("🎉🎉🎉 انتهى!", "done");
+        if (isRunning) log("🎉🎉🎉 انتهى!", "success");
     } catch(e) {
         log("❌ خطأ: " + e.message, "error");
     } finally {
@@ -209,56 +219,59 @@ async function startSolving(mode) {
     }
 }
 
-function cancelSolving() { isRunning = false; log("⏹️ تم إلغاء العملية.", "warn"); }
+function cancelSolving() { isRunning = false; log("⏹️ تم إلغاء العملية.", "error"); }
 
 async function solveChapter(chapId) {
     if (!isRunning) return;
     let rStr = AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId, null);
-    let r = JSON.parse(rStr);
-    if (r.status !== 200) { log("فشل جلب الفصل", "error"); return; }
-    
-    let data = JSON.parse(r.body);
+    let r = safeParse(rStr);
+    if (!r || r.status !== 200) { log("فشل جلب الفصل", "error"); return; }
+
+    let data = safeParse(r.body) || {};
     let lectures = data.lectures || [];
     let testType = (data.chapter && data.chapter.test_type) || "test";
-    
+
     for (let lec of lectures) {
         if (!isRunning) return;
-        log(`▶ بدء الدرس: ${lec.title || lec.id}`, "header");
+        log("▶ بدء الدرس: " + (lec.title || lec.id), "header");
         AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id, null);
         await sleep(200);
-        
+
         let lrStr = AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lec.id, null);
-        let lr = JSON.parse(lrStr);
-        if (lr.status === 200) {
-            let lrData = JSON.parse(lr.body);
-            for (let t of lrData.talks || []) {
+        let lr = safeParse(lrStr);
+        if (lr && lr.status === 200) {
+            let lrData = safeParse(lr.body) || {};
+            for (let t of (lrData.talks || [])) {
                 if (t.type === 'try') {
                     let tryData = (t.body && t.body.codes && t.body.codes[0]) || {};
                     if (tryData.model_answer) {
-                        AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: tryData.lang || 'javascript', answer: tryData.model_answer}}}));
+                        let payload = JSON.stringify({value: {try: {lang: tryData.lang || 'javascript', answer: tryData.model_answer}}});
+                        AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, payload);
                         await sleep(200);
                     }
                 }
             }
         }
         AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id + "/complete", null);
-        log(`  ✅ تم إنهاء الدرس`, "success");
+        log("  ✅ تم إنهاء الدرس", "success");
         await sleep(200);
     }
-    
+
     if (!isRunning) return;
     log("جلب الأسئلة...", "info");
     let qStr = AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId + "/test", null);
-    let q = JSON.parse(qStr);
-    if (q.status !== 200) { log("فشل جلب الأسئلة", "error"); return; }
-    
+    let q = safeParse(qStr);
+    if (!q || q.status !== 200) { log("فشل جلب الأسئلة", "error"); return; }
+
     let questions = [];
-    let qData = JSON.parse(q.body);
+    let qData = safeParse(q.body);
     if (Array.isArray(qData)) {
-        for (let item of qData) if (item.question && item.question.id) questions.push({id: item.question.id, type: item.question.type});
+        for (let item of qData) {
+            if (item && item.question && item.question.id) questions.push({id: item.question.id, type: item.question.type});
+        }
     }
-    if (questions.length === 0) { log("لا أسئلة", "warn"); return; }
-    
+    if (questions.length === 0) { log("لا أسئلة", "error"); return; }
+
     await solveTwoPass(chapId, questions, testType);
 }
 
@@ -266,62 +279,72 @@ async function solveTwoPass(chapId, questions, testType) {
     let total = questions.length;
     let prefix = testType === "test" ? "test" : "review";
     let ep = "/api/study/students/" + prefix + "-questions";
-    
-    log(`🔵 PASS 1/2: إرسال إجابات مبدئية (${total} سؤال)...`, "header");
+
+    log("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
     AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     await sleep(500);
-    
+
     for (let item of questions) {
         if (!isRunning) return;
-        if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: parseInt(item.id + "1")}));
-        else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x=0;"}));
-        log(`  Q${item.id} — sent dummy`, "info");
+        if (item.type === "choice") {
+            let dummyChoice = parseInt(item.id) * 10 + 1;
+            AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: dummyChoice}));
+        } else {
+            AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x=0;"}));
+        }
+        log("  Q" + item.id + " — dummy", "info");
         await sleep(200);
     }
     await sleep(1000);
-    
+
     log("جلب الإجابات الصحيحة...", "info");
     let r1Str = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
     let answers = {};
-    let r1 = JSON.parse(r1Str);
-    if (r1.status === 200) {
-        let res = JSON.parse(r1.body).result || {};
-        for (let cr of res.choice_results || []) {
+    let r1 = safeParse(r1Str);
+    if (r1 && r1.status === 200) {
+        let rb = safeParse(r1.body) || {};
+        let res = rb.result || {};
+        for (let cr of (res.choice_results || [])) {
             let correct = (cr.choices || []).find(c => c.correct);
             if (cr.question_id && correct && correct.choice) answers[cr.question_id] = {choice_id: correct.choice.id};
         }
-        for (let dr of res.description_results || []) {
+        for (let dr of (res.description_results || [])) {
             if (dr.question_id && dr.model_answer) answers[dr.question_id] = {answer_code: dr.model_answer};
         }
     }
-    
-    log(`🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...`, "header");
+
+    log("🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...", "header");
     AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     await sleep(500);
-    
+
     for (let item of questions) {
         if (!isRunning) return;
         if (answers[item.id]) {
             let ans = answers[item.id];
             if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify(ans));
             else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify(ans));
-            log(`  Q${item.id} ✅`, "success");
-        } else log(`  Q${item.id} ❌`, "error");
+            log("  Q" + item.id + " ✅", "success");
+        } else {
+            log("  Q" + item.id + " ❌ (بدون إجابة)", "error");
+        }
         await sleep(200);
     }
     await sleep(1000);
-    
+
     let rfStr = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
-    let rf = JSON.parse(rfStr);
+    let rf = safeParse(rfStr);
     let score = 0;
-    if (rf.status === 200) score = (JSON.parse(rf.body).result || {}).correct_count || 0;
-    log(`🎉 النتيجة: ${score}/${total}`, score === total ? "success" : "warn");
+    if (rf && rf.status === 200) {
+        let rfb = safeParse(rf.body) || {};
+        score = (rfb.result || {}).correct_count || 0;
+    }
+    log("🎉 النتيجة: " + score + "/" + total, score === total ? "success" : "error");
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-function logout() { location.reload(); }
+function logout() { AndroidBridge.clearCookies(); location.reload(); }
 </script>
 </body>
 </html>
