@@ -2,6 +2,8 @@ package com.qureo.premium;
 
 import android.app.Activity;
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
@@ -80,18 +82,35 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getLastCookies() { return serializeCookies(); }
 
+        // تشغيل الخلفية
+        @JavascriptInterface
+        public void startBackgroundService() {
+            Intent serviceIntent = new Intent(MainActivity.this, SolverService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        }
+
+        // إيقاف الخلفية
+        @JavascriptInterface
+        public void stopBackgroundService() {
+            Intent serviceIntent = new Intent(MainActivity.this, SolverService.class);
+            stopService(serviceIntent);
+        }
+
         @JavascriptInterface
         public String request(String method, String urlStr, String body) {
             HttpURLConnection conn = null;
             try {
                 URL url = new URL(urlStr);
                 int redirects = 0;
-                int maxRedirects = 5;
+                int maxRedirects = 10;
                 int code = 0;
                 String finalMethod = method;
                 String finalBody = body;
 
-                // متابعة التحويلات (Redirects) يدوياً لحل مشكلة 307 و 302
                 while (redirects <= maxRedirects) {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod(finalMethod);
@@ -103,6 +122,7 @@ public class MainActivity extends Activity {
                     String referer = url.getHost().contains("portal") ? origin + "/login" : origin + "/";
 
                     conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("X-Requested-With", "mark.via.gp");
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36");
                     conn.setRequestProperty("Origin", origin);
                     conn.setRequestProperty("Referer", referer);
@@ -121,7 +141,6 @@ public class MainActivity extends Activity {
 
                     code = conn.getResponseCode();
 
-                    // حفظ الكوكيز من كل استجابة
                     Map<String, List<String>> headers = conn.getHeaderFields();
                     List<String> setCookies = headers.get("Set-Cookie");
                     if (setCookies == null) setCookies = headers.get("set-cookie");
@@ -129,18 +148,20 @@ public class MainActivity extends Activity {
                         for (String c : setCookies) mergeCookie(c);
                     }
 
-                    // لو السيرفر طلب تحويل (307, 302, 301...)
                     if (code >= 300 && code < 400) {
                         String location = conn.getHeaderField("Location");
                         if (location != null && !location.isEmpty()) {
                             url = new URL(url, location);
-                            if (code == 303) finalMethod = "GET"; // 303 يعني حول لـ GET
+                            if (code == 303 || code == 302 || code == 301) {
+                                finalMethod = "GET"; 
+                                finalBody = null;
+                            }
                             redirects++;
                             conn.disconnect();
-                            continue; // كمل للرابط الجديد
+                            continue; 
                         }
                     }
-                    break; // لو مفيش تحويل، اخرج من الحلقة
+                    break; 
                 }
 
                 InputStream is = (code >= 200 && code < 400) ? conn.getInputStream() : conn.getErrorStream();
