@@ -120,13 +120,10 @@ function doLogin() {
             if (!loginRes) { showError("استجابة غير صالحة"); return resetBtn(btn, btnText, spinner); }
 
             if (loginRes.status !== 200 && loginRes.status !== 302) {
-                let errBody = safeParse(loginRes.body);
-                let msg = errBody && errBody.error ? errBody.error : ("HTTP " + loginRes.status);
-                showError("بيانات مرفوضة: " + msg);
+                showError("بيانات مرفوضة (HTTP " + loginRes.status + ")");
                 return resetBtn(btn, btnText, spinner);
             }
 
-            // تأكيد إضافة الكوكي المطلوبة بعد تسجيل الدخول
             AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
 
             let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
@@ -267,7 +264,16 @@ async function solveChapter(chapId) {
     let qData = safeParse(q.body);
     if (Array.isArray(qData)) {
         for (let item of qData) {
-            if (item && item.question && item.question.id) questions.push({id: item.question.id, type: item.question.type});
+            if (item && item.question && item.question.id) {
+                let correctChoice = (item.question.choices || []).find(c => c.correct === true || c.is_correct === true);
+                questions.push({
+                    id: item.question.id,
+                    type: item.question.type,
+                    choices: item.question.choices || [],
+                    correct_choice_id: correctChoice ? correctChoice.id : null,
+                    model_answer: item.question.model_answer || null
+                });
+            }
         }
     }
     if (questions.length === 0) { log("لا أسئلة", "error"); return; }
@@ -279,38 +285,51 @@ async function solveTwoPass(chapId, questions, testType) {
     let total = questions.length;
     let prefix = testType === "test" ? "test" : "review";
     let ep = "/api/study/students/" + prefix + "-questions";
-
-    log("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
-    AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-    AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-    await sleep(500);
-
-    for (let item of questions) {
-        if (!isRunning) return;
-        if (item.type === "choice") {
-            let dummyChoice = parseInt(item.id) * 10 + 1;
-            AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: dummyChoice}));
-        } else {
-            AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x=0;"}));
-        }
-        log("  Q" + item.id + " — dummy", "info");
-        await sleep(200);
-    }
-    await sleep(1000);
-
-    log("جلب الإجابات الصحيحة...", "info");
-    let r1Str = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
     let answers = {};
-    let r1 = safeParse(r1Str);
-    if (r1 && r1.status === 200) {
-        let rb = safeParse(r1.body) || {};
-        let res = rb.result || {};
-        for (let cr of (res.choice_results || [])) {
-            let correct = (cr.choices || []).find(c => c.correct);
-            if (cr.question_id && correct && correct.choice) answers[cr.question_id] = {choice_id: correct.choice.id};
+
+    // هل الإجابات موجودة جاهزة؟
+    let canBypass = questions.every(q => q.type === 'choice' ? q.correct_choice_id : q.model_answer);
+    
+    if (canBypass) {
+        log("⚡ تم استخراج الإجابات مباشرة من الأسئلة!", "success");
+        for (let q of questions) {
+            if (q.type === 'choice') answers[q.id] = {choice_id: q.correct_choice_id};
+            else answers[q.id] = {answer_code: q.model_answer};
         }
-        for (let dr of (res.description_results || [])) {
-            if (dr.question_id && dr.model_answer) answers[dr.question_id] = {answer_code: dr.model_answer};
+    } else {
+        log("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
+        AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+        AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+        await sleep(500);
+
+        for (let item of questions) {
+            if (!isRunning) return;
+            if (item.type === "choice") {
+                // نرسل اختيار حقيقي من الموجود عشان السيرفر ميرفضش الطلب
+                let dummyChoice = (item.choices && item.choices.length > 0) ? item.choices[0].id : (parseInt(item.id) * 10 + 1);
+                AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: dummyChoice}));
+            } else {
+                AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x=0;"}));
+            }
+            log("  Q" + item.id + " — dummy", "info");
+            await sleep(200);
+        }
+        await sleep(1000);
+
+        log("جلب الإجابات الصحيحة...", "info");
+        let r1Str = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
+        let r1 = safeParse(r1Str);
+        if (r1 && r1.status === 200) {
+            let rb = safeParse(r1.body) || {};
+            let res = rb.result || rb;
+            for (let cr of (res.choice_results || [])) {
+                let correct = (cr.choices || []).find(c => c.correct === true || c.is_correct === true);
+                let cid = correct ? correct.id : (cr.correct_choice_id || null);
+                if (cr.question_id && cid) answers[cr.question_id] = {choice_id: cid};
+            }
+            for (let dr of (res.description_results || [])) {
+                if (dr.question_id && dr.model_answer) answers[dr.question_id] = {answer_code: dr.model_answer};
+            }
         }
     }
 
@@ -338,7 +357,8 @@ async function solveTwoPass(chapId, questions, testType) {
     let score = 0;
     if (rf && rf.status === 200) {
         let rfb = safeParse(rf.body) || {};
-        score = (rfb.result || {}).correct_count || 0;
+        let res = rfb.result || rfb;
+        score = res.correct_count || 0;
     }
     log("🎉 النتيجة: " + score + "/" + total, score === total ? "success" : "error");
 }
