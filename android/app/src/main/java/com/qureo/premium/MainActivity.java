@@ -4,11 +4,14 @@ import android.app.Activity;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.view.View;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,6 +30,18 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // شاشة كاملة وإخفاء الشريط الأسود
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                      | View.SYSTEM_UI_FLAG_FULLSCREEN
+                      | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                      | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                      | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                      | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
+
         webView = new WebView(this);
         setContentView(webView);
 
@@ -43,16 +58,6 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new CookieBridge(), "AndroidBridge");
         webView.setWebViewClient(new WebViewClient());
         webView.loadUrl("file:///android_asset/index.html");
-    }
-
-    private void acquireWakeLock() {
-        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "QuReo::Solver");
-        wakeLock.acquire();
-    }
-
-    private void releaseWakeLock() {
-        if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
     }
 
     public class CookieBridge {
@@ -106,10 +111,12 @@ public class MainActivity extends Activity {
                     
                     Map<String, List<String>> headerFields = conn.getHeaderFields();
                     List<String> cookiesHeader = headerFields.get("Set-Cookie");
+                    if (cookiesHeader == null) cookiesHeader = headerFields.get("set-cookie");
+                    
                     if (cookiesHeader != null) {
                         StringBuilder sb = new StringBuilder();
                         for (String cookie : cookiesHeader) {
-                            sb.append(cookie).append("; ");
+                            sb.append(cookie.split(";")[0]).append("; "); // نأخذ القيمة فقط
                         }
                         lastSetCookies = sb.toString();
                     }
@@ -132,6 +139,7 @@ public class MainActivity extends Activity {
 
                     InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
                     if (is == null) return "{\"status\":" + responseCode + ",\"body\":\"\"}";
+                    
                     BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                     StringBuilder response = new StringBuilder();
                     String line;
@@ -139,10 +147,12 @@ public class MainActivity extends Activity {
                         response.append(line);
                     }
                     br.close();
-                    return "{\"status\":" + responseCode + ",\"body\":" + response.toString() + "}";
+                    
+                    // نستخدم JSONObject.quote عشان نمنع أي خطأ حتى لو الرد HTML
+                    return "{\"status\":" + responseCode + ",\"body\":" + JSONObject.quote(response.toString()) + "}";
 
                 } catch (Exception e) {
-                    return "{\"status\":0,\"body\":\"{\\\"error\\\":\\\"" + e.getMessage().replace("\"", "'") + "\\\"}\"}";
+                    return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}") + "}";
                 }
             }
             return "{\"status\":0,\"body\":\"{\\\"error\\\":\\\"Too many redirects\\\"}\"}";
