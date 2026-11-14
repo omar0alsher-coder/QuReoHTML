@@ -1,5 +1,6 @@
 package com.qureo.premium;
 
+import android.app.Activity;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.webkit.CookieManager;
@@ -7,9 +8,8 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
     private WebView webView;
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -25,7 +25,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        settings.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
