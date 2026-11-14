@@ -23,13 +23,13 @@ import java.util.Map;
 public class MainActivity extends Activity {
     private WebView webView;
     private String lastSetCookies = "";
+    private String currentSessionCookies = "";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // شاشة كاملة 100%
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
     public class CookieBridge {
         @JavascriptInterface
         public void setCookies(String cookies) {
+            currentSessionCookies = cookies; // حفظ الكوكيز للاستخدام في الطلبات القادمة
             String domain = "https://me-tp.qureo.education";
             for (String pair : cookies.split(";")) {
                 String trimmed = pair.trim();
@@ -82,20 +83,25 @@ public class MainActivity extends Activity {
             String currentMethod = method;
             String currentUrl = urlStr;
             String currentBody = body;
-            lastSetCookies = ""; // تصفير الكوكيز قبل كل طلب
+            lastSetCookies = "";
 
             for (int i = 0; i < maxRedirects; i++) {
                 try {
                     URL url = new URL(currentUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod(currentMethod);
-                    conn.setInstanceFollowRedirects(false); // مهم جداً لمنع تحويل الصفحات
+                    conn.setInstanceFollowRedirects(false);
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("X-Requested-With", "mark.via.gp");
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
                     conn.setRequestProperty("Origin", "https://me-tp.qureo.education");
                     conn.setRequestProperty("Referer", "https://me-tp.qureo.education/");
                     conn.setRequestProperty("Accept", "*/*");
+                    
+                    // السطر الأهم: إرسال الكوكيز المحفوظة مع الطلب
+                    if (!currentSessionCookies.isEmpty()) {
+                        conn.setRequestProperty("Cookie", currentSessionCookies);
+                    }
 
                     if (currentBody != null && !currentBody.isEmpty() && (currentMethod.equals("POST") || currentMethod.equals("PUT"))) {
                         conn.setDoOutput(true);
@@ -107,7 +113,6 @@ public class MainActivity extends Activity {
 
                     int responseCode = conn.getResponseCode();
                     
-                    // التقاط الكوكيز من الـ Headers في كل مرة
                     Map<String, List<String>> headerFields = conn.getHeaderFields();
                     List<String> cookiesHeader = headerFields.get("Set-Cookie");
                     if (cookiesHeader == null) cookiesHeader = headerFields.get("set-cookie");
@@ -151,7 +156,6 @@ public class MainActivity extends Activity {
                     }
                     br.close();
                     
-                    // تغليف الرد بـ JSONObject.quote لمنع أي خطأ
                     return "{\"status\":" + responseCode + ",\"body\":" + JSONObject.quote(response.toString()) + "}";
 
                 } catch (Exception e) {

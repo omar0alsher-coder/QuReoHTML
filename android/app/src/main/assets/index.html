@@ -30,7 +30,6 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
 
 #error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: center; }
 
-/* Dashboard Styles */
 #dashboard { justify-content: flex-start; padding: 20px; }
 .header { display: flex; justify-content: space-between; align-items: center; background: #121a2b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45;}
 #log { flex: 1; background: #000; color: #0f0; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45; }
@@ -39,12 +38,10 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
 .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); }
 .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
 
-/* Overlay */
 #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(5px); }
 .spinner { width: 60px; height: 60px; border: 5px solid rgba(76,201,240,0.2); border-top-color: #4cc9f0; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Button Spinner */
 .btn-spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
 </style>
 </head>
@@ -131,7 +128,6 @@ function doLogin() {
     spinner.style.display = "block";
     err.style.display = "none";
 
-    // استخدام setTimeout عشان الواجهة تظهر "جاري الدخول" قبل ما تتجمد
     setTimeout(() => {
         try {
             let loginResStr = AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd}));
@@ -139,7 +135,6 @@ function doLogin() {
             
             if (loginRes.status === 200 || loginRes.status === 302) {
                 let currentCookies = AndroidBridge.getLastCookies();
-                // تأكد من إضافة الكوكي المطلوب
                 if (!currentCookies.includes("student_selected_content_id")) {
                     currentCookies += "; student_selected_content_id=javascript_ar";
                 }
@@ -149,19 +144,24 @@ function doLogin() {
                 let verify = JSON.parse(verifyStr);
                 
                 if (verify.status === 200) {
-                    let me = JSON.parse(verify.body);
-                    document.getElementById("user-name").innerText = me.name || "Student";
-                    
-                    let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
-                    let d = JSON.parse(dStr);
-                    if (d.status === 200) document.getElementById("diamonds").innerText = JSON.parse(d.body);
-                    
-                    btnText.innerText = "تم الدخول ✅";
-                    setTimeout(() => {
-                        document.getElementById("login-screen").classList.remove("active");
-                        document.getElementById("dashboard").classList.add("active");
+                    try {
+                        let me = JSON.parse(verify.body);
+                        document.getElementById("user-name").innerText = me.name || "Student";
+                        
+                        let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
+                        let d = JSON.parse(dStr);
+                        if (d.status === 200) document.getElementById("diamonds").innerText = JSON.parse(d.body);
+                        
+                        btnText.innerText = "تم الدخول ✅";
+                        setTimeout(() => {
+                            document.getElementById("login-screen").classList.remove("active");
+                            document.getElementById("dashboard").classList.add("active");
+                            resetBtn(btn, btnText, spinner);
+                        }, 500);
+                    } catch(e) {
+                        showError("فشل قراءة بيانات الطالب. يرجى المحاولة مرة أخرى.");
                         resetBtn(btn, btnText, spinner);
-                    }, 500);
+                    }
                 } else {
                     showError("فشل التحقق من الصلاحيات (HTTP " + verify.status + ")");
                     resetBtn(btn, btnText, spinner);
