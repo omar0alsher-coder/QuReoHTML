@@ -33,7 +33,10 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // شاشة كاملة 100% وتغطية الكاميرا
+        // منع الشاشة من الإطفاء
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        
+        // شاشة كاملة 100%
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             WindowManager.LayoutParams params = getWindow().getAttributes();
@@ -65,7 +68,7 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
 
         webView = new WebView(this);
-        webView.setBackgroundColor(Color.parseColor("#09090b")); // لون خلفية التطبيق عشان ميبقاش فيه خط أبيض
+        webView.setBackgroundColor(Color.parseColor("#09090b"));
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -78,11 +81,16 @@ public class MainActivity extends Activity {
 
         webView.addJavascriptInterface(new Bridge(), "AndroidBridge");
         webView.setWebViewClient(new WebViewClient());
-        
-        // أهم سطر: عشان الـ Alert والـ Confirm يشتغلوا في الـ WebView
         webView.setWebChromeClient(new WebChromeClient()); 
 
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    // منع إيقاف الـ WebView لما التطبيق يروح للخلفية عشان يفضل يحل
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // webView.onPause(); // تم تعطيلها عمداً عشان الحل يكمل في الخلفية
     }
 
     public class Bridge {

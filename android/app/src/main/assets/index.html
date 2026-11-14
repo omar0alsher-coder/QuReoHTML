@@ -8,7 +8,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        /* شيلنا الـ padding-top خالص عشان الخط الأسود يختفي */
         body { font-family: 'Cairo', sans-serif; background: #09090b; color: #f8fafc; overflow-x: hidden; margin: 0; padding: 0; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
@@ -26,16 +25,29 @@
         .log-success { color: #10b981; font-weight: bold; }
         .log-error { color: #f87171; font-weight: bold; }
         .log-warn { color: #facc15; }
-        
-        /* إضافة مسافة أمان للهيدر بس عشان ميبقاش تحت الكاميرا */
         header { padding-top: env(safe-area-inset-top); }
     </style>
 </head>
 <body>
+    <!-- الداشبورد -->
     <div id="app" class="min-h-screen"></div>
+    
+    <!-- شاشة السجل (برة الـ app عشان متمسحش لما الداشبورد يتحدث) -->
+    <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[70vh] bg-[#0a0a0a] border-t border-slate-700 z-50 flex-col shadow-2xl hidden">
+        <div class="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800">
+            <div class="flex items-center gap-2 text-sm text-slate-300 font-mono">
+                <i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i>
+                <span>Live Logs</span>
+            </div>
+            <button id="closeLogsBtn" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        <div id="logTerminal" class="flex-1 p-4 overflow-y-auto text-sm"></div>
+    </div>
+
     <script>
         function initIcons() { if(typeof lucide !== 'undefined') lucide.createIcons(); }
         const app = document.getElementById('app');
+        const logsContainer = document.getElementById('logsContainer');
         let chaptersData = [];
         let isRunning = false;
 
@@ -44,13 +56,19 @@
 
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
         
-        // سرعة قصوى (10ms)
-        function sleep(ms) { return new Promise(r => setTimeout(r, Math.max(10, ms / 10))); }
+        // سرعة خارقة: 1 مللي ثانية فقط
+        function sleep(ms) { return new Promise(r => setTimeout(r, 1)); }
         
         function cleanText(text) {
             if (!text) return "";
             return text.replace(/\[\[bdi\]\]|\[\[\/bdi\]\]|\[\[bold\]\]|\[\[\/bold\]\]|\[\[code\]\]|\[\[\/code\]\]/g, "").replace(/\n/g, " ").trim();
         }
+
+        // إغلاق السجل
+        document.getElementById('closeLogsBtn').addEventListener('click', () => {
+            logsContainer.classList.add('hidden');
+            logsContainer.classList.remove('flex');
+        });
 
         function renderLogin(errorMsg = '') {
             app.innerHTML = `
@@ -203,16 +221,6 @@
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="chaptersGrid"></div>
                     </main>
-                    <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[60vh] bg-[#0a0a0a] border-t border-slate-700 z-50 flex-col shadow-2xl hidden">
-                        <div class="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800">
-                            <div class="flex items-center gap-2 text-sm text-slate-300 font-mono">
-                                <i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i>
-                                <span>Live Logs</span>
-                            </div>
-                            <button id="closeLogsBtn" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-                        </div>
-                        <div id="logTerminal" class="flex-1 p-4 overflow-y-auto text-sm"></div>
-                    </div>
                 </div>
             `;
             initIcons();
@@ -252,7 +260,7 @@
                     </div>
                 `;
                 div.addEventListener('click', () => {
-                    if (isRunning) return;
+                    if (isRunning) return alert("في عملية حل شغالة بالفعل!");
                     startSolving('single', c.id, c.num);
                 });
                 grid.appendChild(div);
@@ -264,24 +272,18 @@
                 renderLogin();
             });
 
-            const logsContainer = document.getElementById('logsContainer');
             document.getElementById('toggleLogsBtn').addEventListener('click', () => {
                 logsContainer.classList.toggle('hidden');
                 logsContainer.classList.toggle('flex');
             });
-            document.getElementById('closeLogsBtn').addEventListener('click', () => {
-                logsContainer.classList.add('hidden');
-                logsContainer.classList.remove('flex');
-            });
 
-            // شيلنا الـ confirm عشان يشتغل فوراً من غير ما يعلق
             document.getElementById('makePerfectBtn').addEventListener('click', () => {
-                if (isRunning) return;
+                if (isRunning) return alert("في عملية حل شغالة بالفعل!");
                 startSolving('perfect');
             });
 
             document.getElementById('solveAllBtn').addEventListener('click', () => {
-                if (isRunning) return;
+                if (isRunning) return alert("في عملية حل شغالة بالفعل!");
                 startSolving('all');
             });
         }
@@ -293,9 +295,7 @@
             p.className = `log-${type}`;
             p.innerText = msg;
             terminal.appendChild(p);
-            if (terminal.scrollHeight - terminal.scrollTop - terminal.clientHeight < 100) {
-                terminal.scrollTop = terminal.scrollHeight;
-            }
+            terminal.scrollTop = terminal.scrollHeight;
         }
 
         async function startSolving(mode, singleId = null, singleNum = null) {
@@ -303,20 +303,18 @@
             isRunning = true;
             AndroidBridge.startBackgroundService();
             
-            // فتح شاشة السجل أوتوماتيكياً في كل الحالات
-            const logsContainer = document.getElementById('logsContainer');
+            // فتح شاشة السجل أوتوماتيكياً
             logsContainer.classList.remove('hidden');
             logsContainer.classList.add('flex');
+            document.getElementById('logTerminal').innerHTML = '';
 
             let targets = [];
             if (mode === 'single') {
                 targets.push({ id: singleId, num: singleNum });
-            } else {
-                for (let c of chaptersData) {
-                    if (mode === 'all' || (mode === 'perfect' && c.badge !== 'PERFECT')) {
-                        targets.push(c);
-                    }
-                }
+            } else if (mode === 'all') {
+                targets = chaptersData; // حل كل الـ 42
+            } else if (mode === 'perfect') {
+                targets = chaptersData.filter(c => c.badge !== 'PERFECT'); // حل اللي مش برفكت بس
             }
 
             if (targets.length === 0) {
@@ -333,15 +331,24 @@
                     if (!isRunning) break;
                     appendLog(`\n========== المرحلة ${t.num} ==========`, "header");
                     await solveChapter(t.id);
-                    await sleep(500);
-                    await fetchDataAndRender();
+                    await sleep(100);
+                    await updateLocalStats(); // تحديث الجواهر فقط بدون مسح الشاشة
                 }
-                if (isRunning) appendLog("🎉🎉🎉 انتهى!", "success");
+                if (isRunning) appendLog("🎉🎉🎉 انتهى الحل بالكامل!", "success");
             } catch(e) {
                 appendLog("❌ خطأ: " + e.message, "error");
             } finally {
                 isRunning = false;
                 AndroidBridge.stopBackgroundService();
+            }
+        }
+
+        // تحديث الجواهر فقط عشان ميمسحش السجل
+        async function updateLocalStats() {
+            let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
+            if (d && d.status === 200) {
+                let diamEl = document.getElementById("totalDiamonds");
+                if (diamEl) diamEl.innerText = safeParse(d.body);
             }
         }
 
@@ -359,7 +366,7 @@
                 let lecId = lec.id;
                 appendLog("▶ بدء الدرس: " + lecId, "header");
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId, null);
-                await sleep(100);
+                await sleep(50);
 
                 let lr = safeParse(AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lecId, null));
                 if (lr && lr.status === 200) {
@@ -373,14 +380,14 @@
                                 appendLog("  Q: " + cleanText(t.body?.question?.text).substring(0, 40) + "...", "q");
                                 appendLog("  A: " + ans.substring(0, 40) + "...", "a");
                                 AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: lang, answer: ans}}}));
-                                await sleep(100);
+                                await sleep(50);
                             }
                         }
                     }
                 }
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId + "/complete", null);
                 appendLog("  ✅ تم إنهاء الدرس", "success");
-                await sleep(100);
+                await sleep(50);
             }
 
             if (lectures.length > 0) {
@@ -416,7 +423,7 @@
             appendLog("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(500);
+            await sleep(200);
 
             for (let idx = 0; idx < questions.length; idx++) {
                 if (!isRunning) return;
@@ -428,7 +435,7 @@
                     AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
                 }
                 appendLog("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " — sent dummy", "info");
-                await sleep(100);
+                await sleep(50);
             }
             await sleep(500);
 
@@ -449,7 +456,7 @@
             await sleep(500);
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(500);
+            await sleep(200);
 
             let solved = 0;
             for (let idx = 0; idx < questions.length; idx++) {
@@ -469,7 +476,7 @@
                 } else {
                     appendLog("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " ❌ بدون إجابة", "error");
                 }
-                await sleep(100);
+                await sleep(50);
             }
             
             appendLog("التحقق من النتيجة النهائية...", "info");
