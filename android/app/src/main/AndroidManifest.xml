@@ -10,6 +10,8 @@
     <application
         android:allowBackup="true"
         android:label="Mohamed"
+        android:icon="@drawable/icon"
+        android:roundIcon="@drawable/icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
         
