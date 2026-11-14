@@ -230,29 +230,33 @@ async function solveChapter(chapId) {
 
     for (let lec of lectures) {
         if (!isRunning) return;
-        log("▶ بدء الدرس: " + (lec.title || lec.id), "header");
-        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id, null);
-        await sleep(200);
+        let lecId = lec.id;
+        log("▶ بدء الدرس: " + lecId, "header");
+        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId, null);
+        await sleep(500);
 
-        let lrStr = AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lec.id, null);
+        let lrStr = AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lecId, null);
         let lr = safeParse(lrStr);
         if (lr && lr.status === 200) {
             let lrData = safeParse(lr.body) || {};
             for (let t of (lrData.talks || [])) {
                 if (t.type === 'try') {
                     let tryData = (t.body && t.body.codes && t.body.codes[0]) || {};
-                    if (tryData.model_answer) {
-                        let payload = JSON.stringify({value: {try: {lang: tryData.lang || 'javascript', answer: tryData.model_answer}}});
-                        AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, payload);
-                        await sleep(200);
+                    let ans = tryData.model_answer;
+                    let lang = tryData.lang || 'javascript';
+                    if (ans) {
+                        AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: lang, answer: ans}}}));
+                        await sleep(500);
                     }
                 }
             }
         }
-        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id + "/complete", null);
+        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId + "/complete", null);
         log("  ✅ تم إنهاء الدرس", "success");
-        await sleep(200);
+        await sleep(500);
     }
+    
+    await sleep(3000); // انتظار السيرفر (زي البايثون)
 
     if (!isRunning) return;
     log("جلب الأسئلة...", "info");
@@ -264,15 +268,9 @@ async function solveChapter(chapId) {
     let qData = safeParse(q.body);
     if (Array.isArray(qData)) {
         for (let item of qData) {
-            if (item && item.question && item.question.id) {
-                let correctChoice = (item.question.choices || []).find(c => c.correct === true || c.is_correct === true);
-                questions.push({
-                    id: item.question.id,
-                    type: item.question.type,
-                    choices: item.question.choices || [],
-                    correct_choice_id: correctChoice ? correctChoice.id : null,
-                    model_answer: item.question.model_answer || null
-                });
+            let qInfo = item.question || {};
+            if (qInfo.id) {
+                questions.push({ id: qInfo.id, type: qInfo.type });
             }
         }
     }
@@ -287,70 +285,68 @@ async function solveTwoPass(chapId, questions, testType) {
     let ep = "/api/study/students/" + prefix + "-questions";
     let answers = {};
 
-    // هل الإجابات موجودة جاهزة؟
-    let canBypass = questions.every(q => q.type === 'choice' ? q.correct_choice_id : q.model_answer);
-    
-    if (canBypass) {
-        log("⚡ تم استخراج الإجابات مباشرة من الأسئلة!", "success");
-        for (let q of questions) {
-            if (q.type === 'choice') answers[q.id] = {choice_id: q.correct_choice_id};
-            else answers[q.id] = {answer_code: q.model_answer};
+    log("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
+    AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+    AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+    await sleep(1000);
+
+    for (let item of questions) {
+        if (!isRunning) return;
+        if (item.type === "choice") {
+            let dummyChoice = parseInt(item.id + "1"); // زي البايثون int(f"{qid}1")
+            AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: dummyChoice}));
+        } else {
+            AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
         }
-    } else {
-        log("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
-        AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-        AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+        log("  Q" + item.id + " — sent dummy", "info");
         await sleep(500);
+    }
+    await sleep(2000);
 
-        for (let item of questions) {
-            if (!isRunning) return;
-            if (item.type === "choice") {
-                // نرسل اختيار حقيقي من الموجود عشان السيرفر ميرفضش الطلب
-                let dummyChoice = (item.choices && item.choices.length > 0) ? item.choices[0].id : (parseInt(item.id) * 10 + 1);
-                AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: dummyChoice}));
-            } else {
-                AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x=0;"}));
+    log("جلب الإجابات الصحيحة من السيرفر...", "info");
+    let r1Str = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
+    let r1 = safeParse(r1Str);
+    
+    if (r1 && r1.status === 200) {
+        let rb = safeParse(r1.body) || {};
+        let res = rb.result || rb; // زي r1.json().get("result", r1.json())
+        
+        for (let cr of (res.choice_results || [])) {
+            let correct = (cr.choices || []).find(c => c.correct === true || c.is_correct === true);
+            // البايثون بياخد correct["choice"]["id"]
+            if (cr.question_id && correct && correct.choice) {
+                answers[cr.question_id] = { choice_id: correct.choice.id };
             }
-            log("  Q" + item.id + " — dummy", "info");
-            await sleep(200);
         }
-        await sleep(1000);
-
-        log("جلب الإجابات الصحيحة...", "info");
-        let r1Str = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
-        let r1 = safeParse(r1Str);
-        if (r1 && r1.status === 200) {
-            let rb = safeParse(r1.body) || {};
-            let res = rb.result || rb;
-            for (let cr of (res.choice_results || [])) {
-                let correct = (cr.choices || []).find(c => c.correct === true || c.is_correct === true);
-                let cid = correct ? correct.id : (cr.correct_choice_id || null);
-                if (cr.question_id && cid) answers[cr.question_id] = {choice_id: cid};
-            }
-            for (let dr of (res.description_results || [])) {
-                if (dr.question_id && dr.model_answer) answers[dr.question_id] = {answer_code: dr.model_answer};
+        for (let dr of (res.description_results || [])) {
+            if (dr.question_id && dr.model_answer) {
+                answers[dr.question_id] = { answer_code: dr.model_answer };
             }
         }
     }
 
     log("🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...", "header");
+    await sleep(2000);
     AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-    await sleep(500);
+    await sleep(1000);
 
     for (let item of questions) {
         if (!isRunning) return;
         if (answers[item.id]) {
             let ans = answers[item.id];
-            if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify(ans));
-            else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify(ans));
+            if (item.type === "choice") {
+                AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify(ans));
+            } else {
+                AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify(ans));
+            }
             log("  Q" + item.id + " ✅", "success");
         } else {
             log("  Q" + item.id + " ❌ (بدون إجابة)", "error");
         }
-        await sleep(200);
+        await sleep(500);
     }
-    await sleep(1000);
+    await sleep(2000);
 
     let rfStr = AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null);
     let rf = safeParse(rfStr);
