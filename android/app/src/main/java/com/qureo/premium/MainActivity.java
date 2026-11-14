@@ -8,9 +8,16 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class MainActivity extends Activity {
     private WebView webView;
+    private String currentCookies = "";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -37,6 +44,7 @@ public class MainActivity extends Activity {
     public class CookieBridge {
         @JavascriptInterface
         public void setCookies(String cookies) {
+            currentCookies = cookies;
             String domain = "https://me-tp.qureo.education";
             for (String pair : cookies.split(";")) {
                 String trimmed = pair.trim();
@@ -45,6 +53,45 @@ public class MainActivity extends Activity {
                 }
             }
             CookieManager.getInstance().flush();
+        }
+
+        @JavascriptInterface
+        public String request(String method, String urlStr, String body) {
+            try {
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod(method);
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("User-Agent", "mark.via.gp");
+                conn.setRequestProperty("X-Requested-With", "mark.via.gp");
+                conn.setRequestProperty("Origin", "https://me-tp.qureo.education");
+                conn.setRequestProperty("Referer", "https://me-tp.qureo.education/");
+                conn.setRequestProperty("Accept", "*/*");
+                if (currentCookies != null && !currentCookies.isEmpty()) {
+                    conn.setRequestProperty("Cookie", currentCookies);
+                }
+
+                if (body != null && !body.isEmpty() && (method.equals("POST") || method.equals("PUT"))) {
+                    conn.setDoOutput(true);
+                    OutputStream os = conn.getOutputStream();
+                    os.write(body.getBytes("UTF-8"));
+                    os.flush();
+                    os.close();
+                }
+
+                int responseCode = conn.getResponseCode();
+                InputStream is = (responseCode >= 200 && responseCode < 400) ? conn.getInputStream() : conn.getErrorStream();
+                BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    response.append(line);
+                }
+                br.close();
+                return response.toString();
+            } catch (Exception e) {
+                return "{\"error\":\"" + e.getMessage() + "\"}";
+            }
         }
     }
 }
