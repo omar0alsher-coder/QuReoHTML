@@ -57,46 +57,69 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String request(String method, String urlStr, String body) {
-            try {
-                URL url = new URL(urlStr);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod(method);
-                conn.setInstanceFollowRedirects(false); // منع تحويل الصفحات
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("User-Agent", "mark.via.gp");
-                conn.setRequestProperty("X-Requested-With", "mark.via.gp");
-                conn.setRequestProperty("Origin", "https://me-tp.qureo.education");
-                conn.setRequestProperty("Referer", "https://me-tp.qureo.education/");
-                conn.setRequestProperty("Accept", "*/*");
-                if (currentCookies != null && !currentCookies.isEmpty()) {
-                    conn.setRequestProperty("Cookie", currentCookies);
-                }
+            int maxRedirects = 10;
+            String currentMethod = method;
+            String currentUrl = urlStr;
+            String currentBody = body;
 
-                if (body != null && !body.isEmpty() && (method.equals("POST") || method.equals("PUT"))) {
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.getBytes("UTF-8"));
-                    os.flush();
-                    os.close();
-                }
+            for (int i = 0; i < maxRedirects; i++) {
+                try {
+                    URL url = new URL(currentUrl);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod(currentMethod);
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("X-Requested-With", "mark.via.gp");
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                    conn.setRequestProperty("Origin", "https://me-tp.qureo.education");
+                    conn.setRequestProperty("Referer", "https://me-tp.qureo.education/");
+                    conn.setRequestProperty("Accept", "*/*");
+                    
+                    if (currentCookies != null && !currentCookies.isEmpty()) {
+                        conn.setRequestProperty("Cookie", currentCookies);
+                    }
 
-                int responseCode = conn.getResponseCode();
-                if (responseCode == 302 || responseCode == 401) {
-                    return "{\"error\":\"Unauthorized\"}";
-                }
+                    if (currentBody != null && !currentBody.isEmpty() && (currentMethod.equals("POST") || currentMethod.equals("PUT"))) {
+                        conn.setDoOutput(true);
+                        OutputStream os = conn.getOutputStream();
+                        os.write(currentBody.getBytes("UTF-8"));
+                        os.flush();
+                        os.close();
+                    }
 
-                InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
-                BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    response.append(line);
+                    int responseCode = conn.getResponseCode();
+                    if (responseCode == 301 || responseCode == 302 || responseCode == 303 || responseCode == 307 || responseCode == 308) {
+                        String loc = conn.getHeaderField("Location");
+                        if (loc == null || loc.isEmpty()) break;
+                        if (loc.startsWith("/")) {
+                            loc = "https://me-tp.qureo.education" + loc;
+                        } else if (!loc.startsWith("http")) {
+                            loc = "https://me-tp.qureo.education/" + loc;
+                        }
+                        if (responseCode == 301 || responseCode == 302 || responseCode == 303) {
+                            currentMethod = "GET";
+                            currentBody = null;
+                        }
+                        currentUrl = loc;
+                        continue;
+                    }
+
+                    InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
+                    if (is == null) return "{}";
+                    BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+                    br.close();
+                    return response.toString();
+
+                } catch (Exception e) {
+                    return "{\"error\":\"" + e.getMessage() + "\"}";
                 }
-                br.close();
-                return response.toString();
-            } catch (Exception e) {
-                return "{\"error\":\"" + e.getMessage() + "\"}";
             }
+            return "{\"error\":\"Too many redirects\"}";
         }
     }
 }
