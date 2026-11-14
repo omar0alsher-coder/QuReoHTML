@@ -3,7 +3,6 @@ package com.qureo.premium;
 import android.app.Activity;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
@@ -24,23 +23,22 @@ import java.util.Map;
 public class MainActivity extends Activity {
     private WebView webView;
     private String lastSetCookies = "";
-    private PowerManager.WakeLock wakeLock;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // شاشة كاملة وإخفاء الشريط الأسود
+        // شاشة كاملة 100%
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        View decorView = getWindow().getDecorView();
-        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                      | View.SYSTEM_UI_FLAG_FULLSCREEN
-                      | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                      | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                      | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                      | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-        decorView.setSystemUiVisibility(uiOptions);
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+        );
 
         webView = new WebView(this);
         setContentView(webView);
@@ -84,14 +82,14 @@ public class MainActivity extends Activity {
             String currentMethod = method;
             String currentUrl = urlStr;
             String currentBody = body;
-            lastSetCookies = "";
+            lastSetCookies = ""; // تصفير الكوكيز قبل كل طلب
 
             for (int i = 0; i < maxRedirects; i++) {
                 try {
                     URL url = new URL(currentUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod(currentMethod);
-                    conn.setInstanceFollowRedirects(false);
+                    conn.setInstanceFollowRedirects(false); // مهم جداً لمنع تحويل الصفحات
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("X-Requested-With", "mark.via.gp");
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
@@ -109,6 +107,7 @@ public class MainActivity extends Activity {
 
                     int responseCode = conn.getResponseCode();
                     
+                    // التقاط الكوكيز من الـ Headers في كل مرة
                     Map<String, List<String>> headerFields = conn.getHeaderFields();
                     List<String> cookiesHeader = headerFields.get("Set-Cookie");
                     if (cookiesHeader == null) cookiesHeader = headerFields.get("set-cookie");
@@ -116,9 +115,13 @@ public class MainActivity extends Activity {
                     if (cookiesHeader != null) {
                         StringBuilder sb = new StringBuilder();
                         for (String cookie : cookiesHeader) {
-                            sb.append(cookie.split(";")[0]).append("; "); // نأخذ القيمة فقط
+                            sb.append(cookie.split(";")[0]).append("; ");
                         }
-                        lastSetCookies = sb.toString();
+                        if (lastSetCookies.isEmpty() || i == 0) {
+                            lastSetCookies = sb.toString();
+                        } else {
+                            lastSetCookies += sb.toString();
+                        }
                     }
 
                     if (responseCode == 301 || responseCode == 302 || responseCode == 303 || responseCode == 307 || responseCode == 308) {
@@ -148,7 +151,7 @@ public class MainActivity extends Activity {
                     }
                     br.close();
                     
-                    // نستخدم JSONObject.quote عشان نمنع أي خطأ حتى لو الرد HTML
+                    // تغليف الرد بـ JSONObject.quote لمنع أي خطأ
                     return "{\"status\":" + responseCode + ",\"body\":" + JSONObject.quote(response.toString()) + "}";
 
                 } catch (Exception e) {
