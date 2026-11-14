@@ -3,53 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Qureo Premium</title>
+<title>Mohamed</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 body { background: #0b101e; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-#login-screen, #dashboard { display: none; flex-direction: column; padding: 20px; height: 100%; }
+#login-screen, #dashboard { display: none; flex-direction: column; padding: 30px 20px; height: 100%; justify-content: center; }
 .active { display: flex !important; }
-#login-screen { justify-content: center; }
-.card { background: rgba(20, 28, 48, 0.9); border: 1px solid #1f2b45; border-radius: 20px; padding: 30px 20px; text-align: center; }
+
+.card { background: rgba(20, 28, 48, 0.9); border: 1px solid #1f2b45; border-radius: 20px; padding: 30px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
 .logo { width: 80px; height: 80px; background: #1a253d; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; }
 .logo svg { width: 40px; height: 40px; fill: #4cc9f0; }
-h2 { margin-bottom: 5px; font-size: 24px; }
+h2 { color: #fff; margin-bottom: 5px; font-size: 24px; }
 p.subtitle { color: #8b9eb0; font-size: 14px; margin-bottom: 25px; }
+
 .input-group { text-align: right; margin-bottom: 15px; }
 .input-group label { font-size: 14px; color: #a0aec0; margin-bottom: 8px; display: block; }
-input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #2a3752; background: #121a2b; color: #fff; font-size: 16px; outline: none; text-align: right; }
-input:focus { border-color: #4cc9f0; }
-button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #2563eb, #4f46e5); cursor: pointer; margin-top: 10px; transition: 0.3s; }
-button:disabled { background: #2a3752; color: #8b9eb0; }
-#error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 8px; margin-top: 15px; display: none; text-align: center; }
+.input-wrapper { position: relative; }
+.input-wrapper svg { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: #4cc9f0; opacity: 0.6; }
+input { width: 100%; padding: 14px 45px 14px 15px; border-radius: 12px; border: 1px solid #2a3752; background: #121a2b; color: #fff; font-size: 16px; outline: none; transition: 0.3s; }
+input:focus { border-color: #4cc9f0; box-shadow: 0 0 10px rgba(76,201,240,0.2); }
 
-/* Dashboard Style */
-#dashboard { justify-content: flex-start; }
-.header { display: flex; justify-content: space-between; align-items: center; background: #121a2b; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #1f2b45; }
-.header b { color: #4cc9f0; }
-.stats { display: flex; gap: 10px; margin-bottom: 15px; }
-.stat-box { flex: 1; background: #121a2b; border: 1px solid #1f2b45; padding: 10px; border-radius: 12px; text-align: center; }
-.stat-box .val { font-size: 20px; font-weight: bold; color: #4cc9f0; }
-.stat-box .lbl { font-size: 12px; color: #8b9eb0; }
+button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #2563eb, #4f46e5); cursor: pointer; transition: 0.3s; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 10px; }
+button:active { transform: scale(0.97); }
+button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; transform: none; }
 
-#log { flex: 1; background: #000; color: #0f0; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap; border-radius: 12px; margin-bottom: 10px; border: 1px solid #1f2b45; min-height: 150px; }
+#error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: center; word-break: break-all; }
 
-.controls { display: flex; gap: 8px; margin-bottom: 10px; }
-.controls button { margin-top: 0; padding: 12px; font-size: 14px; }
-.btn-perfect { background: linear-gradient(135deg, #10b981, #059669); }
-.btn-all { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
-.btn-stop { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+#dashboard { justify-content: flex-start; padding: 20px; }
+.header { display: flex; justify-content: space-between; align-items: center; background: #121a2b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45;}
+#log { flex: 1; background: #000; color: #0f0; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row button { flex: 1; margin-top: 0; }
+.btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+.btn-success { background: linear-gradient(135deg, #10b981, #059669); }
 
-#chapters { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-content: start; padding-bottom: 20px; }
-.chapter-item { background: #121a2b; border: 1px solid #2a3752; border-radius: 8px; padding: 8px; text-align: center; font-size: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-.chapter-item .num { font-weight: bold; font-size: 14px; margin-bottom: 2px; }
-.chapter-item .score { font-size: 10px; color: #8b9eb0; }
-.chapter-item.perfect { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
-.chapter-item.clear { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
-.chapter-item.retry { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-.chapter-item.solving { border-color: #4cc9f0; animation: pulse 1s infinite alternate; }
-
-@keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+.btn-spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -57,57 +46,60 @@ button:disabled { background: #2a3752; color: #8b9eb0; }
 <div id="login-screen" class="active">
     <div class="card">
         <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
-        <h2>Qureo Premium</h2>
+        <h2>Mohamed</h2>
         <p class="subtitle">أفضل أداة لحل المراحل بضمان 100%</p>
         <div class="input-group">
             <label>رقم الطالب (ID)</label>
-            <input type="text" id="student_id" placeholder="أدخل رقم الطالب">
+            <div class="input-wrapper">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <input type="text" id="student_id" placeholder="أدخل رقم الطالب">
+            </div>
         </div>
         <div class="input-group">
             <label>كلمة المرور</label>
-            <input type="password" id="password" placeholder="••••••••">
+            <div class="input-wrapper">
+                <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+                <input type="password" id="password" placeholder="••••••••">
+            </div>
         </div>
-        <button id="login-btn" onclick="doLogin()">دخول للمنصة ←</button>
+        <button id="login-btn" onclick="doLogin()">
+            <span id="btn-text">دخول للمنصة ←</span>
+            <div id="btn-spinner" class="btn-spinner"></div>
+        </button>
         <div id="error-msg"></div>
     </div>
 </div>
 
 <div id="dashboard">
     <div class="header">
-        <div>مرحباً، <b id="user-name">...</b></div>
+        <div>مرحباً، <b id="user-name" style="color:#4cc9f0;">...</b></div>
         <div style="background:#1f2b45; padding:5px 12px; border-radius:20px; font-size:14px;">💎 <span id="diamonds">0</span></div>
     </div>
-    
-    <div class="stats">
-        <div class="stat-box"><div class="val" id="stat-perfect">0</div><div class="lbl">مكتمل</div></div>
-        <div class="stat-box"><div class="val" id="stat-clear">0</div><div class="lbl">جزئي</div></div>
-        <div class="stat-box"><div class="val" id="stat-retry">0</div><div class="lbl">لم يبدأ</div></div>
-    </div>
-
     <div id="log"></div>
-    
-    <div class="controls">
-        <button class="btn-perfect" onclick="startSolving('perfect')" id="btn-perfect">حل المتبقي</button>
-        <button class="btn-all" onclick="startSolving('all')" id="btn-all">حل الكل (42)</button>
-        <button class="btn-stop" onclick="stopSolving()" id="btn-stop" disabled>إلغاء</button>
+    <div class="btn-row">
+        <button id="start-btn" class="btn-success" onclick="startSolving()">بدء الحل</button>
+        <button id="cancel-btn" class="btn-danger" onclick="cancelSolving()" disabled>إلغاء</button>
     </div>
-
-    <div id="chapters"></div>
+    <button style="margin-top:15px; background:#2a3752;" onclick="logout()">تسجيل خروج</button>
 </div>
 
 <script>
 const BASE = "https://me-tp.qureo.education";
 const PORTAL = "https://me-portal.qureo.education";
 let isRunning = false;
-let chaptersData = [];
 
 function log(msg, type="info") {
-    let color = type === "error" ? "#ef4444" : type === "success" ? "#10b981" : type === "header" ? "#4cc9f0" : "#a0aec0";
+    let color = type === "error" ? "#ef4444" : type === "success" ? "#10b981" : type === "header" ? "#4cc9f0" : type === "q" ? "#f59e0b" : type === "a" ? "#8b5cf6" : "#a0aec0";
     let span = document.createElement("div");
     span.style.color = color;
     span.innerText = msg;
     document.getElementById("log").appendChild(span);
     document.getElementById("log").scrollTop = document.getElementById("log").scrollHeight;
+}
+
+function showError(msg) {
+    let e = document.getElementById("error-msg");
+    e.innerHTML = msg; e.style.display = "block";
 }
 
 function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
@@ -121,127 +113,121 @@ function doLogin() {
     let sid = document.getElementById("student_id").value.trim();
     let pwd = document.getElementById("password").value.trim();
     let btn = document.getElementById("login-btn");
+    let btnText = document.getElementById("btn-text");
+    let spinner = document.getElementById("btn-spinner");
     let err = document.getElementById("error-msg");
 
-    if (!sid || !pwd) return alert("الرجاء إدخال البيانات");
-    btn.disabled = true; btn.innerText = "جاري الدخول..."; err.style.display = "none";
+    if (!sid || !pwd) return showError("الرجاء إدخال رقم الطالب وكلمة المرور");
+    btn.disabled = true; btnText.innerText = "جاري الدخول..."; spinner.style.display = "block"; err.style.display = "none";
     AndroidBridge.clearCookies();
 
-    setTimeout(async () => {
+    setTimeout(() => {
         try {
             let loginRes = safeParse(AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd})));
-            if (!loginRes || (loginRes.status !== 200 && loginRes.status !== 302)) throw new Error("بيانات غير صحيحة");
+            if (!loginRes || (loginRes.status !== 200 && loginRes.status !== 302)) {
+                showError("بيانات مرفوضة (HTTP " + (loginRes ? loginRes.status : "?") + ")");
+                return resetBtn(btn, btnText, spinner);
+            }
 
             AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
-            
-            let verify = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null));
-            if (!verify || verify.status !== 200) throw new Error("فشل الاتصال بالخادم");
 
-            document.getElementById("user-name").innerText = safeParse(verify.body).name || "Student";
-            
-            document.getElementById("login-screen").classList.remove("active");
-            document.getElementById("dashboard").classList.add("active");
-            
-            await updateStatus();
+            let verify = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null));
+            if (!verify || verify.status !== 200) {
+                showError("فشل التحقق (HTTP " + (verify ? verify.status : "?") + ")");
+                return resetBtn(btn, btnText, spinner);
+            }
+
+            let me = safeParse(verify.body);
+            if (!me) { showError("بيانات المستخدم تالفة"); return resetBtn(btn, btnText, spinner); }
+            document.getElementById("user-name").innerText = me.name || "Student";
+
+            try {
+                let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
+                let d = safeParse(dStr);
+                if (d && d.status === 200) {
+                    let val = safeParse(d.body);
+                    document.getElementById("diamonds").innerText = (typeof val === "number" || typeof val === "string") ? val : "0";
+                }
+            } catch(_) {}
+
+            btnText.innerText = "تم الدخول ✅";
+            setTimeout(() => {
+                document.getElementById("login-screen").classList.remove("active");
+                document.getElementById("dashboard").classList.add("active");
+                resetBtn(btn, btnText, spinner);
+            }, 400);
         } catch(e) {
-            err.innerText = e.message; err.style.display = "block";
-            btn.disabled = false; btn.innerText = "دخول للمنصة ←";
+            showError("خطأ: " + e.message);
+            resetBtn(btn, btnText, spinner);
         }
     }, 100);
 }
 
-async function updateStatus() {
-    let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
-    let d = safeParse(dStr);
-    if (d && d.status === 200) document.getElementById("diamonds").innerText = safeParse(d.body);
-
-    let c = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/sections/5/chapters", null));
-    let progressMap = {};
-    if (c && c.status === 200) safeParse(c.body).forEach(item => progressMap[item.chapter_id] = item);
-
-    let chaps = safeParse(AndroidBridge.request("GET", BASE + "/api/study/sections/5", null));
-    let qMap = {};
-    if (chaps && chaps.status === 200) {
-        let chObj = safeParse(chaps.body);
-        if (chObj.chapters) chObj.chapters.forEach(ch => qMap[ch.id] = ch.question_count || 5);
-    }
-
-    chaptersData = [];
-    let perfect = 0, clear = 0, retry = 0;
-    
-    for (let i = 1; i <= 42; i++) {
-        let chapId = 90000 + i;
-        let info = progressMap[chapId] || {};
-        let score = info.best_correct_count || 0;
-        let qCount = qMap[chapId] || 5;
-        let badge = "retry";
-        if (score === qCount && qCount > 0) { badge = "perfect"; perfect++; }
-        else if (score > 0) { badge = "clear"; clear++; }
-        else { retry++; }
-        
-        chaptersData.push({ id: chapId, num: i, score: score, total: qCount, badge: badge });
-    }
-
-    document.getElementById("stat-perfect").innerText = perfect;
-    document.getElementById("stat-clear").innerText = clear;
-    document.getElementById("stat-retry").innerText = retry;
-
-    renderChapters();
+function resetBtn(btn, btnText, spinner) {
+    btn.disabled = false; btnText.innerText = "دخول للمنصة ←"; spinner.style.display = "none";
 }
 
-function renderChapters() {
-    let html = "";
-    for (let ch of chaptersData) {
-        html += `<div class="chapter-item ${ch.badge}" id="chap-${ch.id}">
-            <div class="num">${ch.num}</div>
-            <div class="score">${ch.score}/${ch.total}</div>
-        </div>`;
-    }
-    document.getElementById("chapters").innerHTML = html;
-}
-
-async function startSolving(mode) {
+async function startSolving() {
     if (isRunning) return;
     isRunning = true;
+    document.getElementById("start-btn").disabled = true;
+    document.getElementById("cancel-btn").disabled = false;
+    document.getElementById("log").innerHTML = "";
     
-    document.getElementById("btn-perfect").disabled = true;
-    document.getElementById("btn-all").disabled = true;
-    document.getElementById("btn-stop").disabled = false;
+    AndroidBridge.startBackgroundService(); // تشغيل في الخلفية
     
-    AndroidBridge.startBackgroundService();
-    
-    let targets = chaptersData.filter(ch => mode === 'all' || ch.badge !== 'perfect');
-    if (targets.length === 0) { log("🎉 كل المراحل مكتملة بالفعل!", "success"); resetControls(); return; }
-    
-    log(`🚀 بدء حل ${targets.length} مرحلة...`, "header");
+    log("🚀 بدء حل المراحل...", "header");
 
-    for (let t of targets) {
-        if (!isRunning) break;
-        log(`\n========== المرحلة ${t.num} ==========`, "header");
-        
-        let el = document.getElementById(`chap-${t.id}`);
-        if (el) el.classList.add("solving");
-        
-        await solveChapter(t.id);
-        
-        if (el) el.classList.remove("solving");
-        await updateStatus(); // تحديث الواجهة بعد كل مرحلة
+    try {
+        let c = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/sections/5/chapters", null));
+        let progressMap = {};
+        if (c && c.status === 200) {
+            let arr = safeParse(c.body);
+            if (Array.isArray(arr)) arr.forEach(item => { if (item && item.chapter_id) progressMap[item.chapter_id] = item; });
+        }
+
+        let chaps = safeParse(AndroidBridge.request("GET", BASE + "/api/study/sections/5", null));
+        let qMap = {};
+        if (chaps && chaps.status === 200) {
+            let chObj = safeParse(chaps.body);
+            if (chObj && Array.isArray(chObj.chapters)) chObj.chapters.forEach(ch => { if (ch && ch.id) qMap[ch.id] = ch.question_count || 5; });
+        }
+
+        let targets = [];
+        for (let i = 1; i <= 42; i++) {
+            let chapId = 90000 + i;
+            let info = progressMap[chapId] || {};
+            let score = info.best_correct_count || 0;
+            let qCount = qMap[chapId] || 5;
+            if (score < qCount) targets.push({id: chapId, num: i});
+        }
+
+        if (targets.length === 0) { log("🎉 كل المراحل مكتملة بالفعل!", "success"); return; }
+        log("🚀 جاري حل " + targets.length + " مرحلة...", "header");
+
+        for (let t of targets) {
+            if (!isRunning) break;
+            log("\n========== المرحلة " + t.num + " ==========", "header");
+            await solveChapter(t.id);
+            await sleep(1000);
+        }
+        if (isRunning) log("🎉🎉🎉 انتهى!", "success");
+    } catch(e) {
+        log("❌ خطأ: " + e.message, "error");
+    } finally {
+        resetControls();
     }
-    
-    if (isRunning) log("🎉🎉🎉 انتهى الحل بالكامل!", "success");
-    resetControls();
 }
 
 function resetControls() {
     isRunning = false;
-    document.getElementById("btn-perfect").disabled = false;
-    document.getElementById("btn-all").disabled = false;
-    document.getElementById("btn-stop").disabled = true;
-    AndroidBridge.stopBackgroundService();
+    document.getElementById("start-btn").disabled = false;
+    document.getElementById("cancel-btn").disabled = true;
+    AndroidBridge.stopBackgroundService(); // إيقاف الخلفية
 }
 
-function stopSolving() {
-    isRunning = false;
+function cancelSolving() { 
+    isRunning = false; 
     log("⏹️ تم إلغاء العملية.", "error");
     AndroidBridge.stopBackgroundService();
     resetControls();
@@ -256,34 +242,42 @@ async function solveChapter(chapId) {
     let lectures = data.lectures || [];
     let testType = (data.chapter && data.chapter.test_type) || "test";
 
-    // 1. الدروس
     for (let lec of lectures) {
         if (!isRunning) return;
-        log("▶ درس: " + lec.id, "info");
-        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id, null);
+        let lecId = lec.id;
+        log("▶ بدء الدرس: " + lecId, "header");
+        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId, null);
         await sleep(500);
 
-        let lr = safeParse(AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lec.id, null));
+        let lr = safeParse(AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lecId, null));
         if (lr && lr.status === 200) {
             let lrData = safeParse(lr.body) || {};
             for (let t of (lrData.talks || [])) {
                 if (t.type === 'try') {
                     let tryData = (t.body && t.body.codes && t.body.codes[0]) || {};
-                    if (tryData.model_answer) {
-                        let payload = JSON.stringify({value: {try: {lang: tryData.lang || 'javascript', answer: tryData.model_answer}}});
-                        AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, payload);
+                    let ans = tryData.model_answer;
+                    let lang = tryData.lang || 'javascript';
+                    if (ans) {
+                        log("  Q: " + cleanText(t.body?.question?.text).substring(0, 40) + "...", "q");
+                        log("  A: " + ans.substring(0, 40) + "...", "a");
+                        AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: lang, answer: ans}}}));
                         await sleep(500);
                     }
                 }
             }
         }
-        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id + "/complete", null);
+        AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId + "/complete", null);
+        log("  ✅ تم إنهاء الدرس", "success");
         await sleep(500);
     }
-    
-    if (lectures.length > 0) await sleep(3000);
 
-    // 2. الأسئلة
+    if (lectures.length > 0) {
+        log("انتظار 3 ثواني عشان السيرفر يحدث...", "info");
+        await sleep(3000);
+    }
+    if (!isRunning) return;
+
+    log("جلب الأسئلة...", "info");
     let q = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId + "/test", null));
     if (!q || q.status !== 200) { log("فشل جلب الأسئلة", "error"); return; }
 
@@ -307,64 +301,77 @@ async function solveTwoPass(chapId, questions, testType) {
     let ep = "/api/study/students/" + prefix + "-questions";
     let answers = {};
 
-    log("🔵 PASS 1/2: إجابات مبدئية...", "header");
+    log("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
     AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     await sleep(1000);
 
-    for (let item of questions) {
+    for (let idx = 0; idx < questions.length; idx++) {
         if (!isRunning) return;
+        let item = questions[idx];
         if (item.type === "choice") {
             let dummyChoice = parseInt(item.id + "1");
             AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: dummyChoice}));
         } else {
             AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
         }
-        log("  Q" + item.id + " — dummy", "info");
+        log("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " — sent dummy", "info");
         await sleep(500);
     }
     await sleep(2000);
 
-    log("جلب الإجابات...", "info");
+    log("جلب الإجابات الصحيحة من السيرفر...", "info");
     let r1 = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
     if (r1 && r1.status === 200) {
         let res = safeParse(r1.body).result || safeParse(r1.body);
         for (let cr of (res.choice_results || [])) {
             let correct = (cr.choices || []).find(c => c.correct === true || c.is_correct === true);
-            if (cr.question_id && correct && correct.choice) answers[cr.question_id] = { choice_id: correct.choice.id };
+            if (cr.question_id && correct && correct.choice) answers[cr.question_id] = { choice_id: correct.choice.id, text: correct.choice.content };
         }
         for (let dr of (res.description_results || [])) {
             if (dr.question_id && dr.model_answer) answers[dr.question_id] = { answer_code: dr.model_answer };
         }
     }
 
-    log("🟢 PASS 2/2: الإجابات الصحيحة...", "header");
+    log("🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...", "header");
     await sleep(2000);
     AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
     await sleep(1000);
 
-    for (let item of questions) {
+    let solved = 0;
+    for (let idx = 0; idx < questions.length; idx++) {
         if (!isRunning) return;
+        let item = questions[idx];
         if (answers[item.id]) {
-            if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify(answers[item.id]));
-            else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify(answers[item.id]));
-            log("  Q" + item.id + " ✅", "success");
+            let ans = answers[item.id];
+            if (item.type === "choice") {
+                log("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " ✅ إرسال: " + cleanText(ans.text || "").substring(0, 30), "success");
+                let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: ans.choice_id})));
+                if (r && r.status === 200) solved++;
+            } else {
+                log("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " ✅ إرسال الكود", "success");
+                let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: ans.answer_code})));
+                if (r && r.status === 200) solved++;
+            }
         } else {
-            log("  Q" + item.id + " ❌ (بدون إجابة)", "error");
+            log("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " ❌ بدون إجابة", "error");
         }
         await sleep(500);
     }
+    
+    log("التحقق من النتيجة النهائية...", "info");
     await sleep(2000);
-
     let rf = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
     let score = 0;
     if (rf && rf.status === 200) {
         let res = safeParse(rf.body).result || safeParse(rf.body);
         score = res.correct_count || 0;
     }
-    log("🎉 النتيجة: " + score + "/" + total, score === total ? "success" : "error");
+    log("🎉 النتيجة النهائية: " + score + "/" + total, score === total ? "success" : "error");
 }
+
+function logout() { AndroidBridge.clearCookies(); location.reload(); }
 </script>
 </body>
 </html>

@@ -82,7 +82,6 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getLastCookies() { return serializeCookies(); }
 
-        // تشغيل الخلفية
         @JavascriptInterface
         public void startBackgroundService() {
             Intent serviceIntent = new Intent(MainActivity.this, SolverService.class);
@@ -93,7 +92,6 @@ public class MainActivity extends Activity {
             }
         }
 
-        // إيقاف الخلفية
         @JavascriptInterface
         public void stopBackgroundService() {
             Intent serviceIntent = new Intent(MainActivity.this, SolverService.class);

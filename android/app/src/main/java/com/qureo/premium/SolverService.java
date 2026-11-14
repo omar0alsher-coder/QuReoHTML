@@ -21,8 +21,8 @@ public class SolverService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Qureo Premium")
-                .setContentText("جاري حل المراحل في الخلفية...")
+                .setContentTitle("Mohamed")
+                .setContentText("جاري الحل في الخلفية...")
                 .setSmallIcon(android.R.drawable.ic_menu_compass)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
