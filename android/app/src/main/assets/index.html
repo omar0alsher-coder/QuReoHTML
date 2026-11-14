@@ -8,7 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Cairo', sans-serif; background: #09090b; color: #f8fafc; overflow-x: hidden; padding-top: env(safe-area-inset-top); }
+        /* شيلنا الـ padding-top خالص عشان الخط الأسود يختفي */
+        body { font-family: 'Cairo', sans-serif; background: #09090b; color: #f8fafc; overflow-x: hidden; margin: 0; padding: 0; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
         .chapter-card { transition: all 0.3s ease; cursor: pointer; }
@@ -25,6 +26,9 @@
         .log-success { color: #10b981; font-weight: bold; }
         .log-error { color: #f87171; font-weight: bold; }
         .log-warn { color: #facc15; }
+        
+        /* إضافة مسافة أمان للهيدر بس عشان ميبقاش تحت الكاميرا */
+        header { padding-top: env(safe-area-inset-top); }
     </style>
 </head>
 <body>
@@ -40,7 +44,7 @@
 
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
         
-        // سرعة X100 (10 أجزاء من الثانية)
+        // سرعة قصوى (10ms)
         function sleep(ms) { return new Promise(r => setTimeout(r, Math.max(10, ms / 10))); }
         
         function cleanText(text) {
@@ -248,7 +252,7 @@
                     </div>
                 `;
                 div.addEventListener('click', () => {
-                    if (isRunning) return alert("في عملية حل شغالة بالفعل!");
+                    if (isRunning) return;
                     startSolving('single', c.id, c.num);
                 });
                 grid.appendChild(div);
@@ -270,15 +274,14 @@
                 logsContainer.classList.remove('flex');
             });
 
+            // شيلنا الـ confirm عشان يشتغل فوراً من غير ما يعلق
             document.getElementById('makePerfectBtn').addEventListener('click', () => {
-                if (isRunning) return alert("في عملية حل شغالة بالفعل!");
-                if(!window.confirm("هل تريد جعل الكل برفكت؟")) return;
+                if (isRunning) return;
                 startSolving('perfect');
             });
 
             document.getElementById('solveAllBtn').addEventListener('click', () => {
-                if (isRunning) return alert("في عملية حل شغالة بالفعل!");
-                if(!window.confirm("هل أنت متأكد من حل جميع المراحل 1-42؟")) return;
+                if (isRunning) return;
                 startSolving('all');
             });
         }

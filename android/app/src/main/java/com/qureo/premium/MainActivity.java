@@ -3,11 +3,13 @@ package com.qureo.premium;
 import android.app.Activity;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -31,10 +33,8 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // إزالة الخطوط السوداء والشريط العلوي بالكامل
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        // شاشة كاملة 100% وتغطية الكاميرا
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             WindowManager.LayoutParams params = getWindow().getAttributes();
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
@@ -65,6 +65,7 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
 
         webView = new WebView(this);
+        webView.setBackgroundColor(Color.parseColor("#09090b")); // لون خلفية التطبيق عشان ميبقاش فيه خط أبيض
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -77,6 +78,10 @@ public class MainActivity extends Activity {
 
         webView.addJavascriptInterface(new Bridge(), "AndroidBridge");
         webView.setWebViewClient(new WebViewClient());
+        
+        // أهم سطر: عشان الـ Alert والـ Confirm يشتغلوا في الـ WebView
+        webView.setWebChromeClient(new WebChromeClient()); 
+
         webView.loadUrl("file:///android_asset/index.html");
     }
 
