@@ -24,15 +24,20 @@
         .log-a { color: #34d399; }
         .log-success { color: #10b981; font-weight: bold; }
         .log-error { color: #f87171; font-weight: bold; }
-        .log-warn { color: #facc15; }
         header { padding-top: env(safe-area-inset-top); }
+        
+        /* تأثير التحديث اللحظي */
+        .flash-perfect { animation: flashPerfect 0.5s ease-out; }
+        @keyframes flashPerfect {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            100% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+        }
     </style>
 </head>
 <body>
-    <!-- الداشبورد -->
     <div id="app" class="min-h-screen"></div>
     
-    <!-- شاشة السجل (برة الـ app عشان متمسحش لما الداشبورد يتحدث) -->
+    <!-- السجل برة الـ app عشان متمسحش -->
     <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[70vh] bg-[#0a0a0a] border-t border-slate-700 z-50 flex-col shadow-2xl hidden">
         <div class="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800">
             <div class="flex items-center gap-2 text-sm text-slate-300 font-mono">
@@ -56,15 +61,14 @@
 
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
         
-        // سرعة خارقة: 1 مللي ثانية فقط
-        function sleep(ms) { return new Promise(r => setTimeout(r, 1)); }
+        // سرعة خرافية (150 مللي ثانية)
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
         
         function cleanText(text) {
             if (!text) return "";
             return text.replace(/\[\[bdi\]\]|\[\[\/bdi\]\]|\[\[bold\]\]|\[\[\/bold\]\]|\[\[code\]\]|\[\[\/code\]\]/g, "").replace(/\n/g, " ").trim();
         }
 
-        // إغلاق السجل
         document.getElementById('closeLogsBtn').addEventListener('click', () => {
             logsContainer.classList.add('hidden');
             logsContainer.classList.remove('flex');
@@ -175,6 +179,41 @@
             renderDashboard({ user_id: me.id, name: me.name || "Student", total_diamonds: totalDiamonds });
         }
 
+        function getCardHTML(c) {
+            let badgeHtml = '';
+            if (c.badge === 'PERFECT') badgeHtml = `<span class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded border border-emerald-400/20 badge-text">PERFECT</span>`;
+            else if (c.badge === 'CLEAR') badgeHtml = `<span class="text-[10px] font-black text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded border border-blue-400/20 badge-text">CLEAR</span>`;
+            else badgeHtml = `<span class="text-[10px] font-black text-rose-400 bg-rose-400/10 px-1.5 py-0.5 rounded border border-rose-400/20 badge-text">RETRY</span>`;
+
+            let iconHtml = c.badge === 'PERFECT' ? `
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform icon-container">
+                    <i data-lucide="crown" class="w-5 h-5 text-emerald-400"></i>
+                </div>
+            ` : `
+                <div class="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:scale-110 transition-transform icon-container">
+                    <i data-lucide="play" class="w-4 h-4 text-slate-400 fill-current"></i>
+                </div>
+            `;
+
+            return `
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-xs font-bold text-slate-400">مرحلة ${c.num}</span>
+                    <div class="badge-container">${badgeHtml}</div>
+                </div>
+                <div class="flex items-center justify-center py-2">
+                    ${iconHtml}
+                </div>
+                <div class="flex justify-between items-center mt-auto pt-1 border-t border-slate-700/50">
+                    <div class="flex items-center gap-1 text-xs text-slate-400">
+                        <i data-lucide="book-open" class="w-3 h-3"></i> <span class="score-text">${c.score}/${c.total_q}</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-blue-400">
+                        <span>${c.diamond}</span> <i data-lucide="diamond" class="w-3 h-3 fill-current"></i>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderDashboard(userData) {
             app.innerHTML = `
                 <div class="min-h-screen pb-20">
@@ -227,38 +266,11 @@
 
             const grid = document.getElementById('chaptersGrid');
             chaptersData.forEach(c => {
-                let badgeHtml = '';
-                if (c.badge === 'PERFECT') badgeHtml = `<span class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded border border-emerald-400/20">PERFECT</span>`;
-                else if (c.badge === 'CLEAR') badgeHtml = `<span class="text-[10px] font-black text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded border border-blue-400/20">CLEAR</span>`;
-                else badgeHtml = `<span class="text-[10px] font-black text-rose-400 bg-rose-400/10 px-1.5 py-0.5 rounded border border-rose-400/20">RETRY</span>`;
-
                 let div = document.createElement('div');
+                div.id = `chap-${c.id}`;
                 div.className = `chapter-card glass rounded-xl p-3 flex flex-col relative overflow-hidden group border-t-4 ${c.badge === 'PERFECT' ? 'border-t-emerald-500' : (c.badge === 'CLEAR' ? 'border-t-blue-500' : 'border-t-slate-600')}`;
-                div.innerHTML = `
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="text-xs font-bold text-slate-400">مرحلة ${c.num}</span>
-                        ${badgeHtml}
-                    </div>
-                    <div class="flex items-center justify-center py-2">
-                        ${c.badge === 'PERFECT' ? `
-                            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <i data-lucide="crown" class="w-5 h-5 text-emerald-400"></i>
-                            </div>
-                        ` : `
-                            <div class="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <i data-lucide="play" class="w-4 h-4 text-slate-400 fill-current"></i>
-                            </div>
-                        `}
-                    </div>
-                    <div class="flex justify-between items-center mt-auto pt-1 border-t border-slate-700/50">
-                        <div class="flex items-center gap-1 text-xs text-slate-400">
-                            <i data-lucide="book-open" class="w-3 h-3"></i> <span>${c.score}/${c.total_q}</span>
-                        </div>
-                        <div class="flex items-center gap-1 text-xs font-bold text-blue-400">
-                            <span>${c.diamond}</span> <i data-lucide="diamond" class="w-3 h-3 fill-current"></i>
-                        </div>
-                    </div>
-                `;
+                div.innerHTML = getCardHTML(c);
+                
                 div.addEventListener('click', () => {
                     if (isRunning) return alert("في عملية حل شغالة بالفعل!");
                     startSolving('single', c.id, c.num);
@@ -288,6 +300,28 @@
             });
         }
 
+        // تحديث الكارت فوراً بعد الحل بدون ما نعمل ريفريش للصفحة
+        function updateCardInstant(chapId, score, total, isPerfect) {
+            let c = chaptersData.find(x => x.id === chapId);
+            if (!c) return;
+            
+            c.score = score;
+            c.badge = isPerfect ? 'PERFECT' : (score > 0 ? 'CLEAR' : 'RETRY');
+            
+            let div = document.getElementById(`chap-${chapId}`);
+            if (!div) return;
+
+            // تحديث الكلاس بتاع الحدود
+            div.className = `chapter-card glass rounded-xl p-3 flex flex-col relative overflow-hidden group border-t-4 ${isPerfect ? 'border-t-emerald-500 flash-perfect' : (score > 0 ? 'border-t-blue-500' : 'border-t-slate-600')}`;
+            
+            // تحديث المحتوى الداخلي
+            div.innerHTML = getCardHTML(c);
+            initIcons();
+            
+            // مسح تأثير الوميض بعد ما يخلص
+            if (isPerfect) setTimeout(() => div.classList.remove('flash-perfect'), 500);
+        }
+
         function appendLog(msg, type="info") {
             let terminal = document.getElementById('logTerminal');
             if(!terminal) return;
@@ -303,7 +337,6 @@
             isRunning = true;
             AndroidBridge.startBackgroundService();
             
-            // فتح شاشة السجل أوتوماتيكياً
             logsContainer.classList.remove('hidden');
             logsContainer.classList.add('flex');
             document.getElementById('logTerminal').innerHTML = '';
@@ -312,9 +345,9 @@
             if (mode === 'single') {
                 targets.push({ id: singleId, num: singleNum });
             } else if (mode === 'all') {
-                targets = chaptersData; // حل كل الـ 42
+                targets = [...chaptersData];
             } else if (mode === 'perfect') {
-                targets = chaptersData.filter(c => c.badge !== 'PERFECT'); // حل اللي مش برفكت بس
+                targets = chaptersData.filter(c => c.badge !== 'PERFECT');
             }
 
             if (targets.length === 0) {
@@ -330,9 +363,8 @@
                 for (let t of targets) {
                     if (!isRunning) break;
                     appendLog(`\n========== المرحلة ${t.num} ==========`, "header");
-                    await solveChapter(t.id);
-                    await sleep(100);
-                    await updateLocalStats(); // تحديث الجواهر فقط بدون مسح الشاشة
+                    await solveChapter(t.id, t.num);
+                    await sleep(200);
                 }
                 if (isRunning) appendLog("🎉🎉🎉 انتهى الحل بالكامل!", "success");
             } catch(e) {
@@ -343,16 +375,7 @@
             }
         }
 
-        // تحديث الجواهر فقط عشان ميمسحش السجل
-        async function updateLocalStats() {
-            let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
-            if (d && d.status === 200) {
-                let diamEl = document.getElementById("totalDiamonds");
-                if (diamEl) diamEl.innerText = safeParse(d.body);
-            }
-        }
-
-        async function solveChapter(chapId) {
+        async function solveChapter(chapId, chapNum) {
             if (!isRunning) return;
             let r = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId, null));
             if (!r || r.status !== 200) { appendLog("فشل جلب الفصل", "error"); return; }
@@ -366,7 +389,7 @@
                 let lecId = lec.id;
                 appendLog("▶ بدء الدرس: " + lecId, "header");
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId, null);
-                await sleep(50);
+                await sleep(100);
 
                 let lr = safeParse(AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lecId, null));
                 if (lr && lr.status === 200) {
@@ -380,19 +403,19 @@
                                 appendLog("  Q: " + cleanText(t.body?.question?.text).substring(0, 40) + "...", "q");
                                 appendLog("  A: " + ans.substring(0, 40) + "...", "a");
                                 AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: lang, answer: ans}}}));
-                                await sleep(50);
+                                await sleep(100);
                             }
                         }
                     }
                 }
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lecId + "/complete", null);
                 appendLog("  ✅ تم إنهاء الدرس", "success");
-                await sleep(50);
+                await sleep(100);
             }
 
             if (lectures.length > 0) {
                 appendLog("انتظار سريع عشان السيرفر يحدث...", "info");
-                await sleep(500);
+                await sleep(800); // إجباري عشان السيرفر يفتح الأسئلة
             }
             if (!isRunning) return;
 
@@ -411,10 +434,10 @@
             }
             if (questions.length === 0) { appendLog("لا أسئلة", "warn"); return; }
 
-            await solveTwoPass(chapId, questions, testType);
+            await solveTwoPass(chapId, chapNum, questions, testType);
         }
 
-        async function solveTwoPass(chapId, questions, testType) {
+        async function solveTwoPass(chapId, chapNum, questions, testType) {
             let total = questions.length;
             let prefix = testType === "test" ? "test" : "review";
             let ep = "/api/study/students/" + prefix + "-questions";
@@ -423,7 +446,7 @@
             appendLog("🔵 PASS 1/2: إرسال إجابات مبدئية (" + total + " سؤال)...", "header");
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(200);
+            await sleep(300);
 
             for (let idx = 0; idx < questions.length; idx++) {
                 if (!isRunning) return;
@@ -435,7 +458,7 @@
                     AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
                 }
                 appendLog("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " — sent dummy", "info");
-                await sleep(50);
+                await sleep(150);
             }
             await sleep(500);
 
@@ -456,7 +479,7 @@
             await sleep(500);
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(200);
+            await sleep(300);
 
             let solved = 0;
             for (let idx = 0; idx < questions.length; idx++) {
@@ -476,18 +499,32 @@
                 } else {
                     appendLog("  [" + (idx + 1) + "/" + total + "] Q" + item.id + " ❌ بدون إجابة", "error");
                 }
-                await sleep(50);
+                await sleep(150);
             }
             
             appendLog("التحقق من النتيجة النهائية...", "info");
-            await sleep(500);
+            await sleep(1000); // ننتظر السيرفر ثانية واحدة يحدث الداتابيز
+            
             let rf = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
-            let score = 0;
+            let score = solved; // نستخدم الإجابات اللي اتبعتت بنجاح
             if (rf && rf.status === 200) {
                 let res = safeParse(rf.body).result || safeParse(rf.body);
-                score = res.correct_count || 0;
+                // نأخد أعلى نتيجة بين السيرفر واللي احنا حسبناه عشان نضمن إنها PERFECT
+                score = Math.max(score, res.correct_count || 0); 
             }
-            appendLog("🎉 النتيجة النهائية: " + score + "/" + total, score === total ? "success" : "error");
+            
+            let isPerfect = (score >= total);
+            appendLog("🎉 النتيجة النهائية: " + score + "/" + total + (isPerfect ? " (PERFECT) 🔥" : ""), isPerfect ? "success" : "error");
+            
+            // تحديث الكارت فوراً في نفس الثانية
+            updateCardInstant(chapId, score, total, isPerfect);
+            
+            // تحديث الجواهر بس من غير ما نمسح الشاشة
+            let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
+            if (d && d.status === 200) {
+                let diamEl = document.getElementById("totalDiamonds");
+                if (diamEl) diamEl.innerText = safeParse(d.body);
+            }
         }
 
         renderLogin();
