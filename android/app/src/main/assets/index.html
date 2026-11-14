@@ -4,9 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Qureo Premium</title>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 body { background: #0b101e; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 #login-screen, #dashboard { display: none; flex-direction: column; padding: 30px 20px; height: 100%; justify-content: center; }
 .active { display: flex !important; }
@@ -21,14 +20,14 @@ p.subtitle { color: #8b9eb0; font-size: 14px; margin-bottom: 25px; }
 .input-group label { font-size: 14px; color: #a0aec0; margin-bottom: 8px; display: block; }
 .input-wrapper { position: relative; }
 .input-wrapper svg { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: #4cc9f0; opacity: 0.6; }
-input { width: 100%; padding: 14px 45px 14px 15px; border-radius: 12px; border: 1px solid #2a3752; background: #121a2b; color: #fff; font-size: 16px; outline: none; transition: 0.3s; font-family: 'Tajawal', sans-serif; }
+input { width: 100%; padding: 14px 45px 14px 15px; border-radius: 12px; border: 1px solid #2a3752; background: #121a2b; color: #fff; font-size: 16px; outline: none; transition: 0.3s; }
 input:focus { border-color: #4cc9f0; box-shadow: 0 0 10px rgba(76,201,240,0.2); }
 
 button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #2563eb, #4f46e5); cursor: pointer; transition: 0.3s; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 10px; }
 button:active { transform: scale(0.97); }
 button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; transform: none; }
 
-#error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: center; }
+#error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: center; word-break: break-all; }
 
 #dashboard { justify-content: flex-start; padding: 20px; }
 .header { display: flex; justify-content: space-between; align-items: center; background: #121a2b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45;}
@@ -41,7 +40,6 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
 #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(5px); }
 .spinner { width: 60px; height: 60px; border: 5px solid rgba(76,201,240,0.2); border-top-color: #4cc9f0; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
 .btn-spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
 </style>
 </head>
@@ -51,9 +49,7 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
 
 <div id="login-screen" class="active">
     <div class="card">
-        <div class="logo">
-            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-        </div>
+        <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
         <h2>Qureo Premium</h2>
         <p class="subtitle">أفضل أداة لحل المراحل بضمان 100%</p>
         
@@ -64,7 +60,6 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
                 <input type="text" id="student_id" placeholder="أدخل رقم الطالب">
             </div>
         </div>
-        
         <div class="input-group">
             <label>كلمة المرور</label>
             <div class="input-wrapper">
@@ -72,7 +67,6 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
                 <input type="password" id="password" placeholder="••••••••">
             </div>
         </div>
-
         <button id="login-btn" onclick="doLogin()">
             <span id="btn-text">دخول للمنصة ←</span>
             <div id="btn-spinner" class="btn-spinner"></div>
@@ -113,7 +107,6 @@ function showError(msg) {
     e.innerHTML = msg; e.style.display = "block";
 }
 
-
 function doLogin() {
     let sid = document.getElementById("student_id").value.trim();
     let pwd = document.getElementById("password").value.trim();
@@ -128,20 +121,25 @@ function doLogin() {
     btnText.innerText = "جاري الدخول...";
     spinner.style.display = "block";
     err.style.display = "none";
-    AndroidBridge.clearCookies(); // مسح الكوكيز القديمة قبل الدخول
+    AndroidBridge.clearCookies();
 
     setTimeout(() => {
         try {
+            // 1. إرسال طلب تسجيل الدخول (بنفس طريقة البايثون)
             let loginResStr = AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd}));
             let loginRes = JSON.parse(loginResStr);
             
             if (loginRes.status === 200 || loginRes.status === 302) {
+                // 2. سحب الكوكيز اللي رجعت من السيرفر
                 let currentCookies = AndroidBridge.getLastCookies();
+                // 3. إضافة الكوكي المطلوبة يدوياً (زي البايثون)
                 if (!currentCookies.includes("student_selected_content_id")) {
                     currentCookies += "; student_selected_content_id=javascript_ar";
                 }
+                // 4. حفظ الكوكيز عشان تتبعت في الطلبات الجاية
                 AndroidBridge.setCookies(currentCookies);
                 
+                // 5. التأكد من تسجيل الدخول
                 let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
                 let verify = JSON.parse(verifyStr);
                 
@@ -170,7 +168,7 @@ function doLogin() {
                     resetBtn(btn, btnText, spinner);
                 }
             } else {
-                showError("بيانات مرفوضة (HTTP " + loginRes.status + ").");
+                showError("بيانات مرفوضة (HTTP " + loginRes.status + "). تأكد من الـ ID والباسورد.");
                 resetBtn(btn, btnText, spinner);
             }
         } catch(e) {
@@ -179,7 +177,6 @@ function doLogin() {
         }
     }, 100);
 }
-
 
 function resetBtn(btn, btnText, spinner) {
     btn.disabled = false;
