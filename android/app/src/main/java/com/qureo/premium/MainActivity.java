@@ -35,7 +35,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // شاشة كاملة 100%
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -46,7 +45,6 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
         );
 
-        // تخطي حماية SSL
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
@@ -94,76 +92,107 @@ public class MainActivity extends Activity {
         public void clearCookies() {
             currentSessionCookies = "";
             lastSetCookies = "";
+            CookieManager.getInstance().removeAllCookies(null);
+            CookieManager.getInstance().flush();
         }
 
         @JavascriptInterface
         public String request(String method, String urlStr, String body) {
-            try {
-                URL url = new URL(urlStr);
-                String host = url.getHost();
-                String origin = "https://" + host;
-                String referer = origin + "/";
-                if (host.contains("portal")) referer = origin + "/login";
+            int maxRedirects = 10;
+            String currentMethod = method;
+            String currentUrl = urlStr;
+            String currentBody = body;
+            lastSetCookies = "";
 
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod(method);
-                conn.setInstanceFollowRedirects(false); // إيقاف اللف ورا السيرفر
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(15000);
-                
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("X-Requested-With", "mark.via.gp");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                conn.setRequestProperty("Origin", origin);
-                conn.setRequestProperty("Referer", referer);
-                conn.setRequestProperty("Accept", "*/*");
-                
-                if (!currentSessionCookies.isEmpty()) {
-                    conn.setRequestProperty("Cookie", currentSessionCookies);
-                }
+            for (int i = 0; i < maxRedirects; i++) {
+                try {
+                    URL url = new URL(currentUrl);
+                    String host = url.getHost();
+                    String origin = "https://" + host;
+                    String referer = origin + "/";
+                    if (host.contains("portal")) referer = origin + "/login";
 
-                if (body != null && !body.isEmpty() && (method.equals("POST") || method.equals("PUT"))) {
-                    conn.setDoOutput(true);
-                    OutputStream os = conn.getOutputStream();
-                    os.write(body.getBytes("UTF-8"));
-                    os.flush();
-                    os.close();
-                }
-
-                int responseCode = conn.getResponseCode();
-                
-                // التقاط الكوكيز
-                Map<String, List<String>> headerFields = conn.getHeaderFields();
-                List<String> cookiesHeader = headerFields.get("Set-Cookie");
-                if (cookiesHeader == null) cookiesHeader = headerFields.get("set-cookie");
-                
-                if (cookiesHeader != null) {
-                    StringBuilder sb = new StringBuilder();
-                    for (String cookie : cookiesHeader) {
-                        sb.append(cookie.split(";")[0]).append("; ");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod(currentMethod);
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(15000);
+                    
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("X-Requested-With", "mark.via.gp");
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                    conn.setRequestProperty("Origin", origin);
+                    conn.setRequestProperty("Referer", referer);
+                    conn.setRequestProperty("Accept", "*/*");
+                    
+                    if (!currentSessionCookies.isEmpty()) {
+                        conn.setRequestProperty("Cookie", currentSessionCookies);
                     }
-                    lastSetCookies = sb.toString();
+
+                    if (currentBody != null && !currentBody.isEmpty() && (currentMethod.equals("POST") || currentMethod.equals("PUT"))) {
+                        conn.setDoOutput(true);
+                        OutputStream os = conn.getOutputStream();
+                        os.write(currentBody.getBytes("UTF-8"));
+                        os.flush();
+                        os.close();
+                    }
+
+                    int responseCode = conn.getResponseCode();
+                    
+                    Map<String, List<String>> headerFields = conn.getHeaderFields();
+                    List<String> cookiesHeader = headerFields.get("Set-Cookie");
+                    if (cookiesHeader == null) cookiesHeader = headerFields.get("set-cookie");
+                    
+                    if (cookiesHeader != null) {
+                        StringBuilder sb = new StringBuilder();
+                        for (String cookie : cookiesHeader) {
+                            sb.append(cookie.split(";")[0]).append("; ");
+                        }
+                        if (currentSessionCookies.isEmpty()) {
+                            currentSessionCookies = sb.toString();
+                        } else {
+                            String newCookies = sb.toString();
+                            for (String part : newCookies.split(";")) {
+                                if (!currentSessionCookies.contains(part.trim()) && !part.trim().isEmpty()) {
+                                    currentSessionCookies += part + "; ";
+                                }
+                            }
+                        }
+                        lastSetCookies = currentSessionCookies;
+                    }
+
+                    // المهم هنا: بنكمل الـ Redirect ونبعت نفس الطلب للرابط الجديد
+                    if (responseCode == 301 || responseCode == 302 || responseCode == 303 || responseCode == 307 || responseCode == 308) {
+                        String loc = conn.getHeaderField("Location");
+                        if (loc == null || loc.isEmpty()) break;
+                        if (loc.startsWith("/")) loc = "https://" + host + loc;
+                        else if (!loc.startsWith("http")) loc = "https://" + host + "/" + loc;
+                        
+                        if (responseCode == 301 || responseCode == 302 || responseCode == 303) {
+                            currentMethod = "GET";
+                            currentBody = null;
+                        }
+                        currentUrl = loc;
+                        conn.disconnect();
+                        continue;
+                    }
+
+                    InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
+                    if (is == null) return "{\"status\":" + responseCode + ",\"body\":\"\"}";
+                    
+                    BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) response.append(line);
+                    br.close();
+                    
+                    return "{\"status\":" + responseCode + ",\"body\":" + JSONObject.quote(response.toString()) + "}";
+
+                } catch (Exception e) {
+                    return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getClass().getSimpleName() + ": " + e.getMessage().replace("\"", "'") + "\"}") + "}";
                 }
-
-                // لو السيرفر عمل Redirect، بنرجع 302 فوراً ونكمل في الجافاسكريبت
-                if (responseCode == 301 || responseCode == 302 || responseCode == 303 || responseCode == 307 || responseCode == 308) {
-                    return "{\"status\":" + responseCode + ",\"body\":\"\"}";
-                }
-
-                InputStream is = (responseCode >= 200 && responseCode < 300) ? conn.getInputStream() : conn.getErrorStream();
-                if (is == null) return "{\"status\":" + responseCode + ",\"body\":\"\"}";
-                
-                BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) response.append(line);
-                br.close();
-                
-                return "{\"status\":" + responseCode + ",\"body\":" + JSONObject.quote(response.toString()) + "}";
-
-            } catch (Exception e) {
-                return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getClass().getSimpleName() + ": " + e.getMessage().replace("\"", "'") + "\"}") + "}";
             }
+            return "{\"status\":0,\"body\":\"{\\\"error\\\":\\\"Too many redirects\\\"}\"}";
         }
     }
 }

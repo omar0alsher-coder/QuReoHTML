@@ -129,7 +129,7 @@ function doLogin() {
             let loginResStr = AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd}));
             let loginRes = JSON.parse(loginResStr);
             
-            if (loginRes.status === 200 || loginRes.status === 302) {
+            if (loginRes.status === 200 || loginRes.status === 302 || loginRes.status === 307) {
                 // 2. سحب الكوكيز اللي رجعت من السيرفر
                 let currentCookies = AndroidBridge.getLastCookies();
                 // 3. إضافة الكوكي المطلوبة يدوياً (زي البايثون)
