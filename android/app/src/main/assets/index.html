@@ -113,6 +113,7 @@ function showError(msg) {
     e.innerHTML = msg; e.style.display = "block";
 }
 
+
 function doLogin() {
     let sid = document.getElementById("student_id").value.trim();
     let pwd = document.getElementById("password").value.trim();
@@ -127,6 +128,7 @@ function doLogin() {
     btnText.innerText = "جاري الدخول...";
     spinner.style.display = "block";
     err.style.display = "none";
+    AndroidBridge.clearCookies(); // مسح الكوكيز القديمة قبل الدخول
 
     setTimeout(() => {
         try {
@@ -159,15 +161,16 @@ function doLogin() {
                             resetBtn(btn, btnText, spinner);
                         }, 500);
                     } catch(e) {
-                        showError("فشل قراءة بيانات الطالب. يرجى المحاولة مرة أخرى.");
+                        showError("فشل قراءة بيانات الطالب: " + verify.body);
                         resetBtn(btn, btnText, spinner);
                     }
                 } else {
-                    showError("فشل التحقق من الصلاحيات (HTTP " + verify.status + ")");
+                    let errMsg = verify.body && verify.body.includes("error") ? JSON.parse(verify.body).error : "HTTP " + verify.status;
+                    showError("فشل التحقق: " + errMsg);
                     resetBtn(btn, btnText, spinner);
                 }
             } else {
-                showError("بيانات مرفوضة. تأكد من الـ ID والباسورد.");
+                showError("بيانات مرفوضة (HTTP " + loginRes.status + ").");
                 resetBtn(btn, btnText, spinner);
             }
         } catch(e) {
@@ -176,6 +179,7 @@ function doLogin() {
         }
     }, 100);
 }
+
 
 function resetBtn(btn, btnText, spinner) {
     btn.disabled = false;

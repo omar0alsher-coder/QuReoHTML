@@ -19,6 +19,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -39,6 +44,20 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
         );
+
+        try {
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                }
+            };
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+        } catch (Exception e) {}
 
         webView = new WebView(this);
         setContentView(webView);
@@ -61,20 +80,18 @@ public class MainActivity extends Activity {
     public class CookieBridge {
         @JavascriptInterface
         public void setCookies(String cookies) {
-            currentSessionCookies = cookies; // حفظ الكوكيز للاستخدام في الطلبات القادمة
-            String domain = "https://me-tp.qureo.education";
-            for (String pair : cookies.split(";")) {
-                String trimmed = pair.trim();
-                if (!trimmed.isEmpty()) {
-                    CookieManager.getInstance().setCookie(domain, trimmed);
-                }
-            }
-            CookieManager.getInstance().flush();
+            currentSessionCookies = cookies;
         }
 
         @JavascriptInterface
         public String getLastCookies() {
             return lastSetCookies;
+        }
+
+        @JavascriptInterface
+        public void clearCookies() {
+            currentSessionCookies = "";
+            lastSetCookies = "";
         }
 
         @JavascriptInterface
@@ -88,17 +105,28 @@ public class MainActivity extends Activity {
             for (int i = 0; i < maxRedirects; i++) {
                 try {
                     URL url = new URL(currentUrl);
+                    String host = url.getHost();
+                    String origin = "https://" + host;
+                    String referer = origin + "/";
+                    
+                    // لو بنكلم البوابة، الهيدرز تتغير
+                    if (host.contains("portal")) {
+                        referer = origin + "/login";
+                    }
+
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod(currentMethod);
                     conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(15000);
+                    
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("X-Requested-With", "mark.via.gp");
                     conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                    conn.setRequestProperty("Origin", "https://me-tp.qureo.education");
-                    conn.setRequestProperty("Referer", "https://me-tp.qureo.education/");
+                    conn.setRequestProperty("Origin", origin);
+                    conn.setRequestProperty("Referer", referer);
                     conn.setRequestProperty("Accept", "*/*");
                     
-                    // السطر الأهم: إرسال الكوكيز المحفوظة مع الطلب
                     if (!currentSessionCookies.isEmpty()) {
                         conn.setRequestProperty("Cookie", currentSessionCookies);
                     }
@@ -122,21 +150,16 @@ public class MainActivity extends Activity {
                         for (String cookie : cookiesHeader) {
                             sb.append(cookie.split(";")[0]).append("; ");
                         }
-                        if (lastSetCookies.isEmpty() || i == 0) {
-                            lastSetCookies = sb.toString();
-                        } else {
-                            lastSetCookies += sb.toString();
-                        }
+                        if (lastSetCookies.isEmpty() || i == 0) lastSetCookies = sb.toString();
+                        else lastSetCookies += sb.toString();
                     }
 
                     if (responseCode == 301 || responseCode == 302 || responseCode == 303 || responseCode == 307 || responseCode == 308) {
                         String loc = conn.getHeaderField("Location");
                         if (loc == null || loc.isEmpty()) break;
-                        if (loc.startsWith("/")) {
-                            loc = "https://me-tp.qureo.education" + loc;
-                        } else if (!loc.startsWith("http")) {
-                            loc = "https://me-tp.qureo.education/" + loc;
-                        }
+                        if (loc.startsWith("/")) loc = "https://" + host + loc;
+                        else if (!loc.startsWith("http")) loc = "https://" + host + "/" + loc;
+                        
                         if (responseCode == 301 || responseCode == 302 || responseCode == 303) {
                             currentMethod = "GET";
                             currentBody = null;
@@ -151,15 +174,13 @@ public class MainActivity extends Activity {
                     BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
                     StringBuilder response = new StringBuilder();
                     String line;
-                    while ((line = br.readLine()) != null) {
-                        response.append(line);
-                    }
+                    while ((line = br.readLine()) != null) response.append(line);
                     br.close();
                     
                     return "{\"status\":" + responseCode + ",\"body\":" + JSONObject.quote(response.toString()) + "}";
 
                 } catch (Exception e) {
-                    return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}") + "}";
+                    return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getClass().getSimpleName() + ": " + e.getMessage().replace("\"", "'") + "\"}") + "}";
                 }
             }
             return "{\"status\":0,\"body\":\"{\\\"error\\\":\\\"Too many redirects\\\"}\"}";
