@@ -9,26 +9,21 @@
 body { background: #0b101e; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 #login-screen, #dashboard { display: none; flex-direction: column; padding: 30px 20px; height: 100%; justify-content: center; }
 .active { display: flex !important; }
-
 .card { background: rgba(20, 28, 48, 0.9); border: 1px solid #1f2b45; border-radius: 20px; padding: 30px 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
 .logo { width: 80px; height: 80px; background: #1a253d; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; }
 .logo svg { width: 40px; height: 40px; fill: #4cc9f0; }
 h2 { color: #fff; margin-bottom: 5px; font-size: 24px; }
 p.subtitle { color: #8b9eb0; font-size: 14px; margin-bottom: 25px; }
-
 .input-group { text-align: right; margin-bottom: 15px; }
 .input-group label { font-size: 14px; color: #a0aec0; margin-bottom: 8px; display: block; }
 .input-wrapper { position: relative; }
 .input-wrapper svg { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; fill: #4cc9f0; opacity: 0.6; }
 input { width: 100%; padding: 14px 45px 14px 15px; border-radius: 12px; border: 1px solid #2a3752; background: #121a2b; color: #fff; font-size: 16px; outline: none; transition: 0.3s; }
 input:focus { border-color: #4cc9f0; box-shadow: 0 0 10px rgba(76,201,240,0.2); }
-
 button { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; color: #fff; background: linear-gradient(135deg, #2563eb, #4f46e5); cursor: pointer; transition: 0.3s; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 10px; }
 button:active { transform: scale(0.97); }
 button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; transform: none; }
-
 #error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: center; word-break: break-all; }
-
 #dashboard { justify-content: flex-start; padding: 20px; }
 .header { display: flex; justify-content: space-between; align-items: center; background: #121a2b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45;}
 #log { flex: 1; background: #000; color: #0f0; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap; border-radius: 12px; margin-bottom: 15px; border: 1px solid #1f2b45; }
@@ -36,7 +31,6 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
 .btn-row button { flex: 1; margin-top: 0; }
 .btn-danger { background: linear-gradient(135deg, #dc2626, #b91c1c); }
 .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
-
 #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(5px); }
 .spinner { width: 60px; height: 60px; border: 5px solid rgba(76,201,240,0.2); border-top-color: #4cc9f0; border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -45,14 +39,11 @@ button:disabled { background: #2a3752; color: #8b9eb0; cursor: not-allowed; tran
 </head>
 <body>
 
-<div id="overlay"><div class="spinner"></div><p style="margin-top:20px; font-size:20px; color:#4cc9f0; font-weight:bold;">جاري التحميل...</p></div>
-
 <div id="login-screen" class="active">
     <div class="card">
         <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
         <h2>Qureo Premium</h2>
         <p class="subtitle">أفضل أداة لحل المراحل بضمان 100%</p>
-        
         <div class="input-group">
             <label>رقم الطالب (ID)</label>
             <div class="input-wrapper">
@@ -116,11 +107,7 @@ function doLogin() {
     let err = document.getElementById("error-msg");
     
     if (!sid || !pwd) return showError("الرجاء إدخال رقم الطالب وكلمة المرور");
-
-    btn.disabled = true;
-    btnText.innerText = "جاري الدخول...";
-    spinner.style.display = "block";
-    err.style.display = "none";
+    btn.disabled = true; btnText.innerText = "جاري الدخول..."; spinner.style.display = "block"; err.style.display = "none";
     AndroidBridge.clearCookies();
 
     setTimeout(() => {
@@ -128,40 +115,30 @@ function doLogin() {
             let loginResStr = AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd}));
             let loginRes = JSON.parse(loginResStr);
             
-            // نفس منطق البايثون: لو 200 أو 302 يبقى تمام
             if (loginRes.status === 200 || loginRes.status === 302) {
                 let currentCookies = AndroidBridge.getLastCookies();
-                if (!currentCookies.includes("student_selected_content_id")) {
-                    currentCookies += "; student_selected_content_id=javascript_ar";
-                }
+                if (!currentCookies.includes("student_selected_content_id")) currentCookies += "; student_selected_content_id=javascript_ar";
                 AndroidBridge.setCookies(currentCookies);
                 
                 let verifyStr = AndroidBridge.request("GET", BASE + "/api/study/students/me", null);
                 let verify = JSON.parse(verifyStr);
                 
                 if (verify.status === 200) {
-                    try {
-                        let me = JSON.parse(verify.body);
-                        document.getElementById("user-name").innerText = me.name || "Student";
-                        
-                        let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
-                        let d = JSON.parse(dStr);
-                        if (d.status === 200) document.getElementById("diamonds").innerText = JSON.parse(d.body);
-                        
-                        btnText.innerText = "تم الدخول ✅";
-                        setTimeout(() => {
-                            document.getElementById("login-screen").classList.remove("active");
-                            document.getElementById("dashboard").classList.add("active");
-                            resetBtn(btn, btnText, spinner);
-                        }, 500);
-                    } catch(e) {
-                        showError("فشل قراءة البيانات: " + verify.body);
+                    let me = JSON.parse(verify.body);
+                    document.getElementById("user-name").innerText = me.name || "Student";
+                    
+                    let dStr = AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null);
+                    let d = JSON.parse(dStr);
+                    if (d.status === 200) document.getElementById("diamonds").innerText = JSON.parse(d.body);
+                    
+                    btnText.innerText = "تم الدخول ✅";
+                    setTimeout(() => {
+                        document.getElementById("login-screen").classList.remove("active");
+                        document.getElementById("dashboard").classList.add("active");
                         resetBtn(btn, btnText, spinner);
-                    }
+                    }, 500);
                 } else {
-                    // لو لسه فيه مشكلة، هنطبع الخطأ الحقيقي
-                    let errMsg = verify.body && verify.body.includes("error") ? JSON.parse(verify.body).error : "HTTP " + verify.status;
-                    showError("فشل التحقق: " + errMsg);
+                    showError("فشل التحقق: HTTP " + verify.status);
                     resetBtn(btn, btnText, spinner);
                 }
             } else {
@@ -176,9 +153,7 @@ function doLogin() {
 }
 
 function resetBtn(btn, btnText, spinner) {
-    btn.disabled = false;
-    btnText.innerText = "دخول للمنصة ←";
-    spinner.style.display = "none";
+    btn.disabled = false; btnText.innerText = "دخول للمنصة ←"; spinner.style.display = "none";
 }
 
 async function startSolving(mode) {
@@ -187,8 +162,8 @@ async function startSolving(mode) {
     document.getElementById("start-btn").disabled = true;
     document.getElementById("cancel-btn").disabled = false;
     document.getElementById("log").innerHTML = "";
-    
     log("🚀 بدء الحل...", "header");
+    
     try {
         let cStr = AndroidBridge.request("GET", BASE + "/api/study/students/sections/5/chapters", null);
         let c = JSON.parse(cStr);
@@ -212,28 +187,19 @@ async function startSolving(mode) {
             let info = progressMap[chapId] || {};
             let score = info.best_correct_count || 0;
             let qCount = qMap[chapId] || 5;
-            
-            if (mode === 'perfect') {
-                if (score < qCount) targets.push({id: chapId, num: i});
-            } else {
-                targets.push({id: chapId, num: i});
-            }
+            if (mode === 'perfect') { if (score < qCount) targets.push({id: chapId, num: i}); }
+            else targets.push({id: chapId, num: i});
         }
         
-        if (targets.length === 0) {
-            log("🎉 كل المراحل مكتملة بالفعل!", "success");
-            return;
-        }
-        
+        if (targets.length === 0) { log("🎉 كل المراحل مكتملة بالفعل!", "success"); return; }
         log(`🚀 جاري حل ${targets.length} مرحلة...`, "header");
+        
         for (let t of targets) {
             if (!isRunning) break;
             log(`\n========== المرحلة ${t.num} ==========`, "header");
             await solveChapter(t.id);
         }
-        
         if (isRunning) log("🎉🎉🎉 انتهى!", "done");
-        
     } catch(e) {
         log("❌ خطأ: " + e.message, "error");
     } finally {
@@ -243,10 +209,7 @@ async function startSolving(mode) {
     }
 }
 
-function cancelSolving() {
-    isRunning = false;
-    log("⏹️ تم إلغاء العملية.", "warn");
-}
+function cancelSolving() { isRunning = false; log("⏹️ تم إلغاء العملية.", "warn"); }
 
 async function solveChapter(chapId) {
     if (!isRunning) return;

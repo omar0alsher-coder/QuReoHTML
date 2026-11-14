@@ -18,11 +18,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.security.cert.X509Certificate;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -33,7 +28,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // إخفاء الشريط الأسود (Full Screen)
+        // Full Screen
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -44,19 +39,19 @@ public class MainActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
         );
 
-        // تخطي شهادات الأمان
+        // التغلب على مشاكل الـ SSL
         try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+            javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[]{
+                new javax.net.ssl.X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() { return new java.security.cert.X509Certificate[0]; }
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
                 }
             };
-            SSLContext sc = SSLContext.getInstance("TLS");
+            javax.net.ssl.SSLContext sc = javax.net.ssl.SSLContext.getInstance("TLS");
             sc.init(null, trustAllCerts, new java.security.SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+            javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
         } catch (Exception e) {}
 
         webView = new WebView(this);
@@ -76,19 +71,13 @@ public class MainActivity extends Activity {
 
     public class CookieBridge {
         @JavascriptInterface
-        public void setCookies(String cookies) {
-            currentSessionCookies = cookies;
-        }
-
+        public void setCookies(String cookies) { currentSessionCookies = cookies; }
+        
         @JavascriptInterface
-        public String getLastCookies() {
-            return currentSessionCookies;
-        }
-
+        public String getLastCookies() { return currentSessionCookies; }
+        
         @JavascriptInterface
-        public void clearCookies() {
-            currentSessionCookies = "";
-        }
+        public void clearCookies() { currentSessionCookies = ""; }
 
         @JavascriptInterface
         public String request(String method, String urlStr, String body) {
@@ -100,10 +89,7 @@ public class MainActivity extends Activity {
 
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod(method);
-                
-                // أهم سطر: وقف التحويلات التلقائية عشان نمنع الـ Too many redirects
                 conn.setInstanceFollowRedirects(false); 
-
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setRequestProperty("X-Requested-With", "mark.via.gp");
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
@@ -111,21 +97,18 @@ public class MainActivity extends Activity {
                 conn.setRequestProperty("Referer", referer);
                 conn.setRequestProperty("Accept", "*/*");
 
-                if (!currentSessionCookies.isEmpty()) {
-                    conn.setRequestProperty("Cookie", currentSessionCookies);
-                }
+                if (!currentSessionCookies.isEmpty()) conn.setRequestProperty("Cookie", currentSessionCookies);
 
                 if (body != null && !body.isEmpty() && (method.equals("POST") || method.equals("PUT"))) {
                     conn.setDoOutput(true);
                     OutputStream os = conn.getOutputStream();
                     os.write(body.getBytes("UTF-8"));
-                    os.flush();
-                    os.close();
+                    os.flush(); os.close();
                 }
 
                 int code = conn.getResponseCode();
 
-                // سحب الكوكيز من الرد
+                // سحب الكوكيز
                 Map<String, List<String>> headerFields = conn.getHeaderFields();
                 List<String> cookiesHeader = headerFields.get("Set-Cookie");
                 if (cookiesHeader == null) cookiesHeader = headerFields.get("set-cookie");
@@ -133,9 +116,7 @@ public class MainActivity extends Activity {
                 if (cookiesHeader != null) {
                     for (String cookie : cookiesHeader) {
                         String c = cookie.split(";")[0].trim();
-                        if (!c.isEmpty() && !currentSessionCookies.contains(c)) {
-                            currentSessionCookies += c + "; ";
-                        }
+                        if (!c.isEmpty() && !currentSessionCookies.contains(c)) currentSessionCookies += c + "; ";
                     }
                 }
 
@@ -149,9 +130,7 @@ public class MainActivity extends Activity {
                     br.close();
                     response = resp.toString();
                 }
-
                 return "{\"status\":" + code + ",\"body\":" + JSONObject.quote(response) + "}";
-
             } catch (Exception e) {
                 return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getMessage() + "\"}") + "}";
             }
