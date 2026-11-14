@@ -502,5 +502,192 @@ window.EventSource = class {
     close() {}
 };
 </script>
+
+<script>
+const BASE = "https://me-tp.qureo.education";
+
+function api(method, url, body) {
+    if (url.startsWith("/api")) url = BASE + url;
+    let bodyStr = body ? JSON.stringify(body) : null;
+    let resStr = AndroidBridge.request(method, url, bodyStr);
+    try { return JSON.parse(resStr); } catch(e) { return { error: "Parse error: " + resStr.substring(0, 50) }; }
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function solveTwoPass(chap_id, questions, test_type, log) {
+    let total = questions.length;
+    let prefix = test_type === "test" ? "test" : "review";
+    let endpoint = `/api/study/students/${prefix}-questions`;
+    log(`\n🔵 PASS 1/2: إرسال إجابات مبدئية (${total} سؤال)...`, "header");
+    api("DELETE", `/api/study/students/chapters/${chap_id}/test`);
+    api("PUT", `/api/study/students/chapters/${chap_id}/test`);
+    await sleep(1000);
+    for (let idx = 0; idx < questions.length; idx++) {
+        let q = questions[idx];
+        if (q.type === "choice") api("PUT", `${endpoint}/${q.id}/answer/choice`, { choice_id: parseInt(q.id + "1") });
+        else api("PUT", `${endpoint}/${q.id}/answer/description`, { answer_code: "let _x = 0;" });
+        log(`  [${idx+1}/${total}] Q${q.id} — sent dummy`, "info");
+        await sleep(500);
+    }
+    await sleep(2000);
+    log("جلب الإجابات الصحيحة من السيرفر...", "info");
+    let r1 = api("GET", `/api/study/students/chapters/${chap_id}/${prefix}/result`);
+    let answers = {};
+    if (r1 && !r1.error) {
+        let result1 = r1.result || r1;
+        if (result1.choice_results) {
+            for (let cr of result1.choice_results) {
+                let qid = cr.question_id;
+                let correct = (cr.choices || []).find(c => c.correct);
+                if (qid && correct && correct.choice) answers[qid] = { choice_id: correct.choice.id, text: correct.choice.content };
+            }
+        }
+        if (result1.description_results) {
+            for (let dr of result1.description_results) {
+                if (dr.question_id && dr.model_answer) answers[dr.question_id] = { answer_code: dr.model_answer };
+            }
+        }
+    }
+    log(`\n🟢 PASS 2/2: إعادة الجلسة بالإجابات الصحيحة...`, "header");
+    await sleep(2000);
+    api("DELETE", `/api/study/students/chapters/${chap_id}/test`);
+    api("PUT", `/api/study/students/chapters/${chap_id}/test`);
+    await sleep(1000);
+    for (let idx = 0; idx < questions.length; idx++) {
+        let q = questions[idx];
+        if (answers[q.id]) {
+            let ans = answers[q.id];
+            if (q.type === "choice") {
+                log(`  [${idx+1}/${total}] Q${q.id} ✅ إرسال: ${(ans.text||"").substring(0,50)}`, "success");
+                api("PUT", `${endpoint}/${q.id}/answer/choice`, { choice_id: ans.choice_id });
+            } else {
+                log(`  [${idx+1}/${total}] Q${q.id} ✅ إرسال الكود`, "success");
+                api("PUT", `${endpoint}/${q.id}/answer/description`, { answer_code: ans.answer_code });
+            }
+        } else log(`  [${idx+1}/${total}] Q${q.id} ❌ لم يتم العثور على الإجابة`, "error");
+        await sleep(500);
+    }
+    log("\nالتحقق من النتيجة النهائية...", "info");
+    await sleep(2000);
+    let r_final = api("GET", `/api/study/students/chapters/${chap_id}/${prefix}/result`);
+    let final_score = 0;
+    if (r_final && !r_final.error) final_score = (r_final.result || r_final).correct_count || 0;
+    log(`🎉 انتهى! النتيجة النهائية: ${final_score}/${total}`, final_score === total ? "success" : "warn");
+}
+
+async function solveChapter(chap_id, log) {
+    log(`جلب بيانات الفصل ${chap_id}...`, "header");
+    let r = api("GET", `/api/study/chapters/${chap_id}`);
+    if (!r || r.error) { log("فشل جلب الفصل.", "error"); return; }
+    let lectures = r.lectures || [];
+    let test_type = (r.chapter && r.chapter.test_type) || "test";
+    log(`النوع: ${test_type} | الدروس: ${lectures.length}`, "info");
+    for (let lec of lectures) {
+        log(`\n▶ بدء الدرس: ${lec.id}`, "header");
+        api("PUT", `/api/study/students/lectures/${lec.id}`);
+        await sleep(500);
+        let lr = api("GET", `/api/study/lectures/${lec.id}`);
+        if (lr && lr.talks) {
+            for (let t of lr.talks) {
+                if (t.type === 'try') {
+                    let try_data = (t.body && t.body.codes && t.body.codes[0]) || {};
+                    if (try_data.model_answer) {
+                        log(`  Q: ${(t.body.question.text||"").substring(0,60)}...`, "q");
+                        log(`  A: ${try_data.model_answer.substring(0,60)}...`, "a");
+                        api("PUT", `/api/study/students/lecture-talks/${t.id}`, { value: { try: { lang: try_data.lang || 'javascript', answer: try_data.model_answer } } });
+                        await sleep(500);
+                    }
+                }
+            }
+        }
+        api("PUT", `/api/study/students/lectures/${lec.id}/complete`);
+        log(`  ✅ تم إنهاء الدرس ${lec.id}`, "success");
+        await sleep(500);
+    }
+    if (lectures.length > 0) { log("انتظار 3 ثواني عشان السيرفر يحدث...", "info"); await sleep(3000); }
+    log("\nجلب الأسئلة...", "info");
+    let rq = api("GET", `/api/study/chapters/${chap_id}/test`);
+    if (!rq || rq.error) { log(`فشل جلب الأسئلة`, "error"); return; }
+    let questions = [];
+    if (Array.isArray(rq)) {
+        for (let q of rq) if (q.question && q.question.id) questions.push({ id: q.question.id, type: q.question.type });
+    }
+    if (questions.length === 0) { log("لم يتم العثور على أسئلة.", "warn"); return; }
+    await solveTwoPass(chap_id, questions, test_type, log);
+}
+
+const originalFetch = window.fetch;
+window.fetch = async function(url, options) {
+    if (typeof url === 'string' && url.includes("/api/status")) {
+        try {
+            let body = JSON.parse(options.body);
+            AndroidBridge.setCookies(body.cookies);
+            let u = api("GET", "/api/study/students/me");
+            if (u.error || !u.id) return new Response(JSON.stringify({error: "فشل الاتصال (تأكد من الكوكيز)"}), {status: 400});
+            let d = api("GET", "/api/study/students/courses/javascript_ar/diamond");
+            let c = api("GET", "/api/study/students/sections/5/chapters");
+            let progress_map = {};
+            if (Array.isArray(c)) c.forEach(item => progress_map[item.chapter_id] = item);
+            let chaps_info = api("GET", "/api/study/sections/5");
+            let q_map = {};
+            if (chaps_info && chaps_info.chapters) chaps_info.chapters.forEach(ch => q_map[ch.id] = ch.question_count || 5);
+            let chapters = [];
+            for (let i = 1; i <= 42; i++) {
+                let chap_id = 90000 + i;
+                let info = progress_map[chap_id] || {};
+                let score = info.best_correct_count || 0;
+                let q_count = q_map[chap_id] || 5;
+                let badge = score === q_count && q_count > 0 ? "PERFECT" : (score > 0 ? "CLEAR" : "RETRY");
+                chapters.push({ id: chap_id, num: i, completed: !!info.completed_at, score: score, total_q: q_count, diamond: info.diamond||0, badge: badge });
+            }
+            return new Response(JSON.stringify({ user_id: u.id, name: u.name, total_diamonds: (typeof d === 'number' ? d : 0), chapters: chapters }), {status: 200, headers: {'Content-Type': 'application/json'}});
+        } catch(e) { return new Response(JSON.stringify({error: e.message}), {status: 500}); }
+    }
+    return originalFetch.apply(this, arguments);
+};
+
+window.EventSource = class {
+    constructor(url) {
+        this.url = url; this.onmessage = null; this.onerror = null;
+        setTimeout(() => this.run(), 100);
+    }
+    emit(msg, type) { if (this.onmessage) this.onmessage({ data: JSON.stringify({msg: msg, type: type}) }); }
+    async run() {
+        try {
+            let urlObj = new URL(this.url, "http://localhost");
+            AndroidBridge.setCookies(urlObj.searchParams.get('cookies') || "");
+            if (urlObj.pathname === "/api/solve_one") {
+                this.emit(`🚀 بدء المرحلة ${urlObj.searchParams.get('chapter_id')}...`, "header");
+                await solveChapter(parseInt(urlObj.searchParams.get('chapter_id')), (msg, type) => this.emit(msg, type));
+                this.emit("DONE", "done");
+            } else if (urlObj.pathname === "/api/solve_all") {
+                let mode = urlObj.searchParams.get('mode') || 'all';
+                let c = api("GET", "/api/study/students/sections/5/chapters");
+                let progress_map = {};
+                if (Array.isArray(c)) c.forEach(item => progress_map[item.chapter_id] = item);
+                let chaps_info = api("GET", "/api/study/sections/5");
+                let q_map = {};
+                if (chaps_info && chaps_info.chapters) chaps_info.chapters.forEach(ch => q_map[ch.id] = ch.question_count || 5);
+                let targets = [];
+                for (let i = 1; i <= 42; i++) {
+                    let chap_id = 90000 + i;
+                    let info = progress_map[chap_id] || {};
+                    if (mode === 'perfect') { if ((info.best_correct_count||0) < (q_map[chap_id]||5)) targets.push({ id: chap_id, num: i }); }
+                    else targets.push({ id: chap_id, num: i });
+                }
+                if (targets.length === 0) { this.emit("🎉 كل المراحل PERFECT بالفعل!", "success"); return; }
+                this.emit(`🚀 بدء حل ${targets.length} مرحلة...`, "header");
+                for (let t of targets) {
+                    this.emit(`\n========== المرحلة ${t.num} ==========`, "header");
+                    await solveChapter(t.id, (msg, type) => this.emit(msg, type));
+                    await sleep(1000);
+                }
+                this.emit("🎉🎉🎉 انتهى!", "done");
+            }
+        } catch(e) { if (this.onerror) this.onerror(e); }
+    }
+    close() {}
+};
+</script>
 </body>
 </html>
