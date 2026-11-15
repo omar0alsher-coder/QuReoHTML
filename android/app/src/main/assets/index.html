@@ -25,6 +25,7 @@
         .log-success { color: #10b981; font-weight: bold; }
         .log-error { color: #f87171; font-weight: bold; }
         header { padding-top: env(safe-area-inset-top); }
+        
         .flash-perfect { animation: flashPerfect 0.5s ease-out; }
         @keyframes flashPerfect {
             0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
@@ -83,7 +84,7 @@
 
         function renderLogin(errorMsg = '') {
             app.innerHTML = `
-                <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+                <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden pt-[env(safe-area-inset-top)]">
                     <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600 rounded-full blur-[140px] opacity-30"></div>
                     <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600 rounded-full blur-[140px] opacity-30"></div>
                     <div class="glass w-full max-w-lg p-10 rounded-3xl relative z-10">
@@ -140,7 +141,7 @@
                 }
 
                 AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
-                AndroidBridge.saveSession(); // حفظ الجلسة
+                AndroidBridge.saveSession();
 
                 let verify = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null));
                 if (!verify || verify.status !== 200) {
@@ -152,7 +153,6 @@
             });
         }
 
-        // التحقق من وجود جلسة محفوظة عند فتح التطبيق
         window.onload = async () => {
             let saved = AndroidBridge.getSavedCookies();
             if (saved) {
@@ -241,7 +241,7 @@
         function renderDashboard(userData) {
             app.innerHTML = `
                 <div class="min-h-screen pb-20">
-                    <header class="glass sticky top-0 z-40 border-b border-slate-800">
+                    <header class="glass sticky top-0 z-40 border-b border-slate-800 pt-[env(safe-area-inset-top)]">
                         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
@@ -313,7 +313,6 @@
                 logsContainer.classList.toggle('flex');
             });
 
-            // تصحيح: حل الكل بيحل الباقي بس
             document.getElementById('makePerfectBtn').addEventListener('click', () => {
                 if (isRunning) return alert("في عملية حل شغالة بالفعل!");
                 startSolving('perfect');
@@ -338,14 +337,30 @@
             if (isPerfect) setTimeout(() => div.classList.remove('flash-perfect'), 500);
         }
 
+        // تحسين طباعة اللوجز عشان متعملش لاج (144 FPS)
+        let logBuffer = [];
+        let isLogScheduled = false;
         function appendLog(msg, type="info") {
+            logBuffer.push({msg, type});
+            if (!isLogScheduled) {
+                isLogScheduled = true;
+                requestAnimationFrame(flushLogs);
+            }
+        }
+        function flushLogs() {
             let terminal = document.getElementById('logTerminal');
-            if(!terminal) return;
-            let p = document.createElement('div');
-            p.className = `log-${type}`;
-            p.innerText = msg;
-            terminal.appendChild(p);
-            terminal.scrollTo({ top: terminal.scrollHeight, behavior: 'instant' });
+            if(!terminal) { logBuffer = []; isLogScheduled = false; return; }
+            let fragment = document.createDocumentFragment();
+            for (let log of logBuffer) {
+                let p = document.createElement('div');
+                p.className = `log-${log.type}`;
+                p.innerText = log.msg;
+                fragment.appendChild(p);
+            }
+            terminal.appendChild(fragment);
+            terminal.scrollTop = terminal.scrollHeight;
+            logBuffer = [];
+            isLogScheduled = false;
         }
 
         async function startSolving(mode, singleId = null, singleNum = null) {
@@ -361,7 +376,6 @@
             if (mode === 'single') {
                 targets.push({ id: singleId, num: singleNum });
             } else {
-                // يحل بس اللي مش PERFECT
                 targets = chaptersData.filter(c => c.badge !== 'PERFECT');
             }
 
