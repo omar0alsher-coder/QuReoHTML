@@ -44,14 +44,13 @@ public class MainActivity extends Activity {
 
         prefs = getSharedPreferences("QureoPrefs", Context.MODE_PRIVATE);
 
-        // طلب صلاحية الإشعارات
+        // طلب الصلاحيات الأساسية
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
 
-        // طلب إلغاء توفير البطارية
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Intent intent = new Intent();
             String packageName = getPackageName();
@@ -63,13 +62,13 @@ public class MainActivity extends Activity {
             }
         }
 
-        // شاشة كاملة وتغطية الكاميرا
+        // شاشة كاملة
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             WindowManager.LayoutParams params = getWindow().getAttributes();
-            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS; // شفافية الكاميرا
+            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
             getWindow().setAttributes(params);
         }
         
@@ -103,7 +102,7 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
 
         webView = new WebView(this);
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null); // تسريع الرسم 144 فريم
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -113,7 +112,12 @@ public class MainActivity extends Activity {
         s.setAllowUniversalAccessFromFileURLs(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setMediaPlaybackRequiresUserGesture(false);
-        s.setRenderPriority(WebSettings.RenderPriority.HIGH); // تحسين الأداء
+        s.setRenderPriority(WebSettings.RenderPriority.HIGH);
+
+        // أهم تعديل: إعطاء الـ WebView أولوية عالية جداً حتى لا يوقفه النظام
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
+        }
 
         webView.addJavascriptInterface(new Bridge(), "AndroidBridge");
         webView.setWebViewClient(new WebViewClient());
@@ -125,9 +129,17 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        // IMPORTANT: Do NOT call webView.onPause() to keep JS running in background
+        // منع إيقاف الجافاسكريبت لما التطبيق يروح للخلفية
         if (webView != null) {
             webView.resumeTimers(); 
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.resumeTimers();
         }
     }
 
