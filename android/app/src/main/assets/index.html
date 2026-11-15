@@ -31,6 +31,9 @@
             0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             100% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
         }
+        .dropdown-menu { display: none; position: absolute; top: 100%; right: 0; width: 250px; z-index: 50; }
+        .dropdown-menu.active { display: block; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -57,11 +60,34 @@
         const BASE = "https://me-tp.qureo.education";
         const PORTAL = "https://me-portal.qureo.education";
 
+        // --- إدارة الحسابات ---
+        let accounts = JSON.parse(localStorage.getItem('qureo_accounts')) || [];
+        let currentAccountIndex = localStorage.getItem('qureo_current_account') !== null ? parseInt(localStorage.getItem('qureo_current_account')) : -1;
+
+        function saveAccounts() { localStorage.setItem('qureo_accounts', JSON.stringify(accounts)); }
+        function saveCurrentAccount(idx) { currentAccountIndex = idx; localStorage.setItem('qureo_current_account', idx); }
+
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
         function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
         function cleanText(text) {
             if (!text) return "";
             return text.replace(/\[\[bdi\]\]|\[\[\/bdi\]\]|\[\[bold\]\]|\[\[\/bold\]\]|\[\[code\]\]|\[\[\/code\]\]/g, "").replace(/\n/g, " ").trim();
+        }
+
+        // --- خدعة الصوت الصامت عشان التطبيق ميقفش في الخلفية ---
+        let audioCtx;
+        function playSilentAudio() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    let oscillator = audioCtx.createOscillator();
+                    let gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    gainNode.gain.value = 0; 
+                    oscillator.start();
+                } catch(e) { console.log("AudioContext not supported"); }
+            }
         }
 
         document.getElementById('closeLogsBtn').addEventListener('click', () => {
@@ -98,10 +124,17 @@
                         ${errorMsg ? `<div class="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-xl mb-5 text-base text-center">${errorMsg}</div>` : ''}
                         <div class="space-y-6">
                             <div>
+                                <label class="block text-base font-medium text-slate-200 mb-2">اسم الطالب (اختياري)</label>
+                                <div class="relative">
+                                    <i data-lucide="smile" class="absolute right-4 top-4 w-6 h-6 text-slate-500"></i>
+                                    <input type="text" id="customName" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl py-4 pr-12 pl-4 text-white text-lg focus:outline-none focus:border-blue-500 transition-colors" placeholder="مثال: محمد" />
+                                </div>
+                            </div>
+                            <div>
                                 <label class="block text-base font-medium text-slate-200 mb-2">رقم الطالب (ID)</label>
                                 <div class="relative">
                                     <i data-lucide="user" class="absolute right-4 top-4 w-6 h-6 text-slate-500"></i>
-                                    <input type="text" id="studentId" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl py-4 pr-12 pl-4 text-white text-lg focus:outline-none focus:border-blue-500 transition-colors" placeholder="477650905" />
+                                    <input type="text" id="studentId" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl py-4 pr-12 pl-4 text-white text-lg focus:outline-none focus:border-blue-500 transition-colors" placeholder="481006599" />
                                 </div>
                             </div>
                             <div>
@@ -118,6 +151,7 @@
                                 <span>دخول للمنصة</span>
                                 <i data-lucide="arrow-left" class="w-6 h-6"></i>
                             </button>
+                            ${accounts.length > 0 ? `<button onclick="backToDash()" class="w-full bg-slate-800 text-slate-300 font-bold py-3 rounded-2xl text-base transition-all mt-2">رجوع للحسابات</button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -126,6 +160,8 @@
             document.getElementById('loginBtn').addEventListener('click', async () => {
                 const sid = document.getElementById('studentId').value.trim();
                 const pwd = document.getElementById('password').value.trim();
+                const customName = document.getElementById('customName').value.trim();
+                
                 if(!sid || !pwd) { renderLogin("الرجاء إدخال رقم الطالب وكلمة المرور"); return; }
                 const btn = document.getElementById('loginBtn');
                 btn.innerHTML = `<i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i><span>جاري الدخول...</span>`;
@@ -149,23 +185,41 @@
                     return;
                 }
                 
+                // حفظ الحساب في الذاكرة
+                let cookies = AndroidBridge.getSavedCookies();
+                let existingIdx = accounts.findIndex(a => a.id === sid);
+                let accData = { id: sid, name: customName || "الطالب " + sid, cookies: cookies };
+                
+                if (existingIdx >= 0) {
+                    accounts[existingIdx] = accData;
+                    saveCurrentAccount(existingIdx);
+                } else {
+                    accounts.push(accData);
+                    saveCurrentAccount(accounts.length - 1);
+                }
+                saveAccounts();
+
                 await fetchDataAndRender();
             });
         }
 
-        window.onload = async () => {
-            let saved = AndroidBridge.getSavedCookies();
-            if (saved) {
-                let verify = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null));
-                if (verify && verify.status === 200) {
-                    await fetchDataAndRender();
-                    return;
-                }
+        function backToDash() {
+            if (accounts.length > 0) {
+                renderDashboard(accounts[currentAccountIndex] || accounts[0]);
             }
-            renderLogin();
-        };
+        }
 
-        async function fetchDataAndRender() {
+        async function fetchDataAndRender(account) {
+            // تحميل الكوكيز الخاصة بالحساب الحالي
+            if (account && account.cookies) {
+                AndroidBridge.clearCookies();
+                let pairs = account.cookies.split("; ");
+                pairs.forEach(p => {
+                    let idx = p.indexOf('=');
+                    if (idx > 0) AndroidBridge.setCookie(p.substring(0, idx), p.substring(idx + 1));
+                });
+            }
+
             let me = safeParse(safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null)).body);
             let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
             let totalDiamonds = (d && d.status === 200) ? safeParse(d.body) : 0;
@@ -200,7 +254,36 @@
                 });
             }
 
-            renderDashboard({ user_id: me.id, name: me.name || "Student", total_diamonds: totalDiamonds });
+            renderDashboard({ 
+                user_id: account ? account.id : me.id, 
+                custom_name: account ? account.name : "الطالب", 
+                total_diamonds: totalDiamonds 
+            });
+        }
+
+        function toggleAccountsMenu() {
+            let menu = document.getElementById('accountsMenu');
+            menu.classList.toggle('active');
+        }
+
+        function switchAccount(idx) {
+            saveCurrentAccount(idx);
+            fetchDataAndRender(accounts[idx]);
+        }
+
+        function addNewAccount() {
+            renderLogin();
+        }
+
+        function editProfileName() {
+            let currentAcc = accounts[currentAccountIndex];
+            if (!currentAcc) return;
+            let newName = prompt("أدخل اسم الطالب:", currentAcc.name);
+            if (newName && newName.trim() !== "") {
+                currentAcc.name = newName.trim();
+                saveAccounts();
+                fetchDataAndRender(currentAcc);
+            }
         }
 
         function getCardHTML(c) {
@@ -239,19 +322,50 @@
         }
 
         function renderDashboard(userData) {
+            let accountsHtml = accounts.map((acc, i) => `
+                <div class="flex justify-between items-center p-3 hover:bg-slate-700/50 cursor-pointer border-b border-slate-700/50 transition-colors" onclick="switchAccount(${i})">
+                    <div>
+                        <div class="text-white font-bold text-sm">${acc.name}</div>
+                        <div class="text-slate-400 text-xs">${acc.id}</div>
+                    </div>
+                    ${i === currentAccountIndex ? '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>' : ''}
+                </div>
+            `).join('');
+
             app.innerHTML = `
                 <div class="min-h-screen pb-20">
                     <header class="glass sticky top-0 z-40 border-b border-slate-800 pt-[env(safe-area-inset-top)]">
                         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
-                                    <i data-lucide="sparkles" class="w-6 h-6 text-blue-400"></i>
+                            
+                            <!-- القائمة المنسدلة للحسابات -->
+                            <div class="relative">
+                                <div class="flex items-center gap-3 cursor-pointer select-none" onclick="toggleAccountsMenu()">
+                                    <div class="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
+                                        <i data-lucide="user" class="w-6 h-6 text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h1 class="text-lg font-bold text-white">${userData.custom_name}</h1>
+                                            <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                                        </div>
+                                        <p class="text-sm text-slate-400" dir="ltr">${userData.user_id}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h1 class="text-xl font-bold text-white">Mohamed</h1>
-                                    <p class="text-sm text-slate-400">${userData.name}</p>
+                                
+                                <div id="accountsMenu" class="dropdown-menu glass rounded-xl overflow-hidden shadow-2xl mt-2">
+                                    <div class="p-3 bg-slate-800/80 border-b border-slate-700">
+                                        <span class="text-xs font-bold text-slate-300">الحسابات المحفوظة</span>
+                                    </div>
+                                    ${accountsHtml}
+                                    <button onclick="editProfileName()" class="w-full text-right p-3 text-blue-400 hover:bg-slate-700/50 flex items-center gap-2 text-sm font-bold border-b border-slate-700/50 transition-colors">
+                                        <i data-lucide="edit-2" class="w-4 h-4"></i> تعديل اسم الطالب
+                                    </button>
+                                    <button onclick="addNewAccount()" class="w-full text-right p-3 text-emerald-400 hover:bg-slate-700/50 flex items-center gap-2 text-sm font-bold transition-colors">
+                                        <i data-lucide="plus-circle" class="w-4 h-4"></i> إضافة حساب جديد
+                                    </button>
                                 </div>
                             </div>
+
                             <div class="flex items-center gap-4">
                                 <div class="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
                                     <span class="text-base font-bold text-slate-300">الجواهر</span>
@@ -304,8 +418,11 @@
             initIcons();
 
             document.getElementById('logoutBtn').addEventListener('click', () => {
-                AndroidBridge.clearCookies();
-                renderLogin();
+                accounts.splice(currentAccountIndex, 1);
+                saveAccounts();
+                saveCurrentAccount(-1);
+                if(accounts.length > 0) fetchDataAndRender(accounts[0]);
+                else renderLogin();
             });
 
             document.getElementById('toggleLogsBtn').addEventListener('click', () => {
@@ -322,6 +439,15 @@
                 if (isRunning) return alert("في عملية حل شغالة بالفعل!");
                 startSolving('all');
             });
+            
+            // إغلاق القائمة عند النقر خارجها
+            document.addEventListener('click', function(event) {
+                let menu = document.getElementById('accountsMenu');
+                let container = menu ? menu.previousElementSibling : null;
+                if (menu && menu.classList.contains('active') && container && !container.contains(event.target)) {
+                    menu.classList.remove('active');
+                }
+            });
         }
 
         function updateCardInstant(chapId, score, total, isPerfect) {
@@ -337,7 +463,6 @@
             if (isPerfect) setTimeout(() => div.classList.remove('flash-perfect'), 500);
         }
 
-        // تحسين طباعة اللوجز عشان متعملش لاج (144 FPS)
         let logBuffer = [];
         let isLogScheduled = false;
         function appendLog(msg, type="info") {
@@ -367,6 +492,7 @@
             if (isRunning) return;
             isRunning = true;
             AndroidBridge.startBackgroundService();
+            playSilentAudio(); // تشغيل الصوت الصامت عشان التطبيق ميقفش في الخلفية
             
             logsContainer.classList.remove('hidden');
             logsContainer.classList.add('flex');
@@ -394,10 +520,8 @@
                     appendLog(`\n========== حل المرحلة ${t.num} ==========`, "header");
                     await solveChapter(t.id, t.num);
                     
-                    // إرسال إشعار لو التطبيق في الخلفية
-                    if (document.hidden) {
-                        AndroidBridge.sendNotification("تم حل المرحلة " + t.num + " بنجاح", "Qureo Premium");
-                    }
+                    // إرسال إشعار
+                    AndroidBridge.sendNotification("تم حل المرحلة " + t.num + " بنجاح", "Qureo Premium");
                     await sleep(50); 
                 }
                 if (isRunning) appendLog("🎉🎉🎉 انتهى الحل بالكامل!", "success");
@@ -544,6 +668,15 @@
                 if (diamEl) diamEl.innerText = safeParse(d.body);
             }
         }
+
+        window.onload = async () => {
+            if (accounts.length > 0) {
+                if (currentAccountIndex < 0 || currentAccountIndex >= accounts.length) saveCurrentAccount(0);
+                await fetchDataAndRender(accounts[currentAccountIndex]);
+            } else {
+                renderLogin();
+            }
+        };
     </script>
 </body>
 </html>
