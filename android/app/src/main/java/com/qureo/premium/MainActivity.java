@@ -44,7 +44,6 @@ public class MainActivity extends Activity {
 
         prefs = getSharedPreferences("QureoPrefs", Context.MODE_PRIVATE);
 
-        // طلب الصلاحيات الأساسية
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
@@ -62,7 +61,6 @@ public class MainActivity extends Activity {
             }
         }
 
-        // شاشة كاملة
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         
@@ -114,7 +112,6 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setRenderPriority(WebSettings.RenderPriority.HIGH);
 
-        // أهم تعديل: إعطاء الـ WebView أولوية عالية جداً حتى لا يوقفه النظام
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
         }
@@ -127,19 +124,16 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        // منع إيقاف الجافاسكريبت لما التطبيق يروح للخلفية
-        if (webView != null) {
-            webView.resumeTimers(); 
-        }
-    }
-
-    @Override
     protected void onResume() {
         super.onResume();
         if (webView != null) {
             webView.resumeTimers();
+            // حل مشكلة الشاشة السوداء (لو الـ WebView قعد كتير ووقف)
+            if (webView.getUrl() == null || webView.getUrl().equals("about:blank")) {
+                webView.loadUrl("file:///android_asset/index.html");
+            } else {
+                webView.evaluateJavascript("if(document.body.innerHTML.trim() === '') { location.reload(); }", null);
+            }
         }
     }
 
