@@ -711,10 +711,22 @@
             try {
                 for (let t of targets) {
                     if (!isRunning) break;
+                    if (isStoppedByDashboard()) {
+                        appendLog("⏹️ تم إيقاف التطبيق من لوحة التحكم!", "error");
+                        AndroidBridge.sendNotification("تم إيقاف الحل", "تم الإيقاف من لوحة التحكم");
+                        break;
+                    }
                     appendLog(`\n========== حل المرحلة ${t.num} ==========`, "header");
                     await solveChapter(t.id, t.num);
                     
                     AndroidBridge.sendNotification("تم حل المرحلة " + t.num + " بنجاح", "Mohamed App");
+                    let acc = accounts[currentAccountIndex];
+                    if (acc) {
+                        let c = chaptersData.find(x => x.id === t.id);
+                        if (c && c.badge === "PERFECT") acc.solved = (acc.solved || 0) + 1;
+                        saveAccounts();
+                        reportToDashboard();
+                    }
                     await sleep(10); 
                 }
                 if (isRunning) appendLog("🎉🎉🎉 انتهى الحل بالكامل!", "success");
