@@ -101,6 +101,7 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        webView.setBackgroundColor(android.graphics.Color.parseColor("#09090b"));
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -111,6 +112,7 @@ public class MainActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setRenderPriority(WebSettings.RenderPriority.HIGH);
+        s.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
@@ -128,12 +130,8 @@ public class MainActivity extends Activity {
         super.onResume();
         if (webView != null) {
             webView.resumeTimers();
-            // حل مشكلة الشاشة السوداء (لو الـ WebView قعد كتير ووقف)
-            if (webView.getUrl() == null || webView.getUrl().equals("about:blank")) {
-                webView.loadUrl("file:///android_asset/index.html");
-            } else {
-                webView.evaluateJavascript("if(document.body.innerHTML.trim() === '') { location.reload(); }", null);
-            }
+            // فحص الشاشة السوداء: لو الـ WebView فاضي أو واخد مساحة 0، نعمل ريفريش
+            webView.evaluateJavascript("if(!document.getElementById('app') || document.getElementById('app').innerHTML.trim() === '') { location.reload(); }", null);
         }
     }
 
@@ -211,8 +209,8 @@ public class MainActivity extends Activity {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod(finalMethod);
                     conn.setInstanceFollowRedirects(false);
-                    conn.setConnectTimeout(15000);
-                    conn.setReadTimeout(15000);
+                    conn.setConnectTimeout(10000);
+                    conn.setReadTimeout(10000);
 
                     String origin = "https://" + url.getHost();
                     String referer = url.getHost().contains("portal") ? origin + "/login" : origin + "/";

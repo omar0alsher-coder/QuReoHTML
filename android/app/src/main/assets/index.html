@@ -13,12 +13,12 @@
         .glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
         .chapter-card { transition: all 0.2s ease; cursor: pointer; will-change: transform, box-shadow; }
         .chapter-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 10; }
-        #logTerminal { font-family: monospace; direction: ltr; text-align: left; font-size: 13px; line-height: 1.6; }
-        #logTerminal div { border-bottom: 1px solid #1e293b; padding: 3px 0; }
+        #logTerminal { font-family: monospace; direction: ltr; text-align: left; font-size: 12px; line-height: 1.5; }
+        #logTerminal div { border-bottom: 1px solid #1e293b; padding: 2px 0; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .log-header { color: #c084fc; font-weight: bold; margin-top: 12px; border-top: 1px solid #334155; padding-top: 8px; font-size: 15px; }
+        .log-header { color: #c084fc; font-weight: bold; margin-top: 12px; border-top: 1px solid #334155; padding-top: 8px; font-size: 14px; }
         .log-info { color: #60a5fa; }
         .log-q { color: #fbbf24; }
         .log-a { color: #34d399; font-weight: bold; }
@@ -53,7 +53,7 @@
         <div id="logTerminal" class="flex-1 p-4 overflow-y-auto"></div>
     </div>
 
-    <!-- المودال (للإعدادات والمراجعة والإحصائيات) -->
+    <!-- المودال -->
     <div id="modalContainer" class="modal-overlay">
         <div class="glass w-full max-w-2xl h-[85vh] rounded-3xl flex flex-col overflow-hidden relative">
             <div class="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-900/50">
@@ -76,7 +76,6 @@
         const BASE = "https://me-tp.qureo.education";
         const PORTAL = "https://me-portal.qureo.education";
 
-        // إدارة الحسابات (مع الباسورد)
         let accounts = JSON.parse(localStorage.getItem('qureo_accounts')) || [];
         let currentAccountIndex = localStorage.getItem('qureo_current_account') !== null ? parseInt(localStorage.getItem('qureo_current_account')) : -1;
 
@@ -90,7 +89,6 @@
             return text.replace(/\[\[bdi\]\]|\[\[\/bdi\]\]|\[\[bold\]\]|\[\[\/bold\]\]|\[\[code\]\]|\[\[\/code\]\]/g, "").replace(/\n/g, " ").trim();
         }
 
-        // --- خدعة الصوت الصامت عشان التطبيق ميقفش في الخلفية ---
         let audioCtx;
         function playSilentAudio() {
             if (!audioCtx) {
@@ -111,10 +109,7 @@
             logsContainer.classList.remove('flex');
         });
 
-        function closeModal() {
-            document.getElementById('modalContainer').classList.remove('active');
-        }
-
+        function closeModal() { document.getElementById('modalContainer').classList.remove('active'); }
         function openModal(title, contentHtml) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalBody').innerHTML = contentHtml;
@@ -126,11 +121,9 @@
             let pwd = document.getElementById('password');
             let icon = document.getElementById('eye-icon');
             if (pwd.type === 'password') {
-                pwd.type = 'text';
-                icon.setAttribute('data-lucide', 'eye-off');
+                pwd.type = 'text'; icon.setAttribute('data-lucide', 'eye-off');
             } else {
-                pwd.type = 'password';
-                icon.setAttribute('data-lucide', 'eye');
+                pwd.type = 'password'; icon.setAttribute('data-lucide', 'eye');
             }
             initIcons();
         }
@@ -216,13 +209,8 @@
                 let existingIdx = accounts.findIndex(a => a.id === sid);
                 let accData = { id: sid, password: pwd, name: customName || "الطالب " + sid, cookies: cookies, solved: 0 };
                 
-                if (existingIdx >= 0) {
-                    accounts[existingIdx] = accData;
-                    saveCurrentAccount(existingIdx);
-                } else {
-                    accounts.push(accData);
-                    saveCurrentAccount(accounts.length - 1);
-                }
+                if (existingIdx >= 0) { accounts[existingIdx] = accData; saveCurrentAccount(existingIdx); }
+                else { accounts.push(accData); saveCurrentAccount(accounts.length - 1); }
                 saveAccounts();
 
                 await fetchDataAndRender();
@@ -230,19 +218,14 @@
         }
 
         function backToDash() {
-            if (accounts.length > 0) {
-                renderDashboard(accounts[currentAccountIndex] || accounts[0]);
-            }
+            if (accounts.length > 0) renderDashboard(accounts[currentAccountIndex] || accounts[0]);
         }
 
         async function fetchDataAndRender(account) {
             if (account && account.cookies) {
                 AndroidBridge.clearCookies();
                 let pairs = account.cookies.split("; ");
-                pairs.forEach(p => {
-                    let idx = p.indexOf('=');
-                    if (idx > 0) AndroidBridge.setCookie(p.substring(0, idx), p.substring(idx + 1));
-                });
+                pairs.forEach(p => { let idx = p.indexOf('='); if (idx > 0) AndroidBridge.setCookie(p.substring(0, idx), p.substring(idx + 1)); });
             }
 
             let me = safeParse(safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null)).body);
@@ -274,51 +257,24 @@
                 if (score === qCount && qCount > 0) { badge = "PERFECT"; perfectCount++; }
                 else if (score > 0) badge = "CLEAR";
 
-                chaptersData.push({
-                    id: chapId, num: i, completed: "completed_at" in info,
-                    score: score, total_q: qCount, diamond: info.diamond || 0, badge: badge
-                });
+                chaptersData.push({ id: chapId, num: i, completed: "completed_at" in info, score: score, total_q: qCount, diamond: info.diamond || 0, badge: badge });
             }
 
-            // حفظ عدد المراحل اللي اتحلت في حساب الطالب
-            if (account) {
-                account.solved = perfectCount;
-                saveAccounts();
-            }
-
-            renderDashboard({ 
-                user_id: account ? account.id : me.id, 
-                custom_name: account ? account.name : "الطالب", 
-                total_diamonds: totalDiamonds 
-            });
+            if (account) { account.solved = perfectCount; saveAccounts(); }
+            renderDashboard({ user_id: account ? account.id : me.id, custom_name: account ? account.name : "الطالب", total_diamonds: totalDiamonds });
         }
 
-        function toggleAccountsMenu() {
-            let menu = document.getElementById('accountsMenu');
-            menu.classList.toggle('active');
-        }
-
-        function switchAccount(idx) {
-            saveCurrentAccount(idx);
-            fetchDataAndRender(accounts[idx]);
-        }
-
-        function addNewAccount() {
-            renderLogin();
-        }
+        function toggleAccountsMenu() { document.getElementById('accountsMenu').classList.toggle('active'); }
+        function switchAccount(idx) { saveCurrentAccount(idx); fetchDataAndRender(accounts[idx]); }
+        function addNewAccount() { renderLogin(); }
 
         function editProfileName() {
             let currentAcc = accounts[currentAccountIndex];
             if (!currentAcc) return;
             let newName = prompt("أدخل اسم الطالب:", currentAcc.name);
-            if (newName && newName.trim() !== "") {
-                currentAcc.name = newName.trim();
-                saveAccounts();
-                fetchDataAndRender(currentAcc);
-            }
+            if (newName && newName.trim() !== "") { currentAcc.name = newName.trim(); saveAccounts(); fetchDataAndRender(currentAcc); }
         }
 
-        // --- صفحة الإحصائيات (بدل الفلاسك) ---
         function openStats() {
             let html = `<div class="space-y-4">`;
             accounts.forEach((acc, i) => {
@@ -340,7 +296,6 @@
             openModal("إحصائيات الحسابات", html);
         }
 
-        // --- صفحة المراجعة (الأسئلة والإجابات) ---
         async function openReview() {
             let html = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">`;
             for (let i = 1; i <= 42; i++) {
@@ -358,7 +313,11 @@
         async function loadQuestions(chapId, chapNum) {
             openModal("جاري التحميل...", `<div class="text-center py-10"><i data-lucide="loader-2" class="w-10 h-10 animate-spin text-blue-500 mx-auto"></i></div>`);
             
+            // تأمين جلب الأسئلة (بنعمل PUT الأول عشان نفتح الجلسة)
+            AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
+            await sleep(50);
             let r = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId + "/test", null));
+            
             if (!r || r.status !== 200) {
                 openModal("خطأ", `<div class="text-red-400 text-center">فشل تحميل الأسئلة</div>`);
                 return;
@@ -374,7 +333,6 @@
                 }
             }
 
-            // جلب الإجابات الصح
             let r1 = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/test/result", null));
             let answers = {};
             if (r1 && r1.status === 200) {
@@ -387,6 +345,9 @@
                     if (dr.question_id && dr.model_answer) answers[dr.question_id] = dr.model_answer;
                 }
             }
+            
+            // تنظيف الجلسة
+            AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
 
             let html = `<div class="space-y-4">`;
             questions.forEach((q, i) => {
@@ -417,210 +378,40 @@
             let answerDiv = element.nextElementSibling;
             answerDiv.classList.toggle('hidden');
             let icon = element.querySelector('i');
-            if (answerDiv.classList.contains('hidden')) {
-                icon.setAttribute('data-lucide', 'chevron-down');
-            } else {
-                icon.setAttribute('data-lucide', 'chevron-up');
-            }
+            icon.setAttribute('data-lucide', answerDiv.classList.contains('hidden') ? 'chevron-down' : 'chevron-up');
             initIcons();
         }
 
-        function getCardHTML(c) {
-            let badgeHtml = '';
-            if (c.badge === 'PERFECT') badgeHtml = `<span class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20 badge-text">PERFECT</span>`;
-            else if (c.badge === 'CLEAR') badgeHtml = `<span class="text-[10px] font-black text-blue-400 bg-blue-400/10 px-2 py-1 rounded-md border border-blue-400/20 badge-text">CLEAR</span>`;
-            else badgeHtml = `<span class="text-[10px] font-black text-rose-400 bg-rose-400/10 px-2 py-1 rounded-md border border-rose-400/20 badge-text">RETRY</span>`;
-
-            let iconHtml = c.badge === 'PERFECT' ? `
-                <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform icon-container">
-                    <i data-lucide="crown" class="w-6 h-6 text-emerald-400"></i>
-                </div>
-            ` : `
-                <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:scale-110 transition-transform icon-container">
-                    <i data-lucide="play" class="w-5 h-5 text-slate-400 fill-current"></i>
-                </div>
-            `;
-
-            return `
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-sm font-bold text-slate-300">مرحلة ${c.num}</span>
-                    <div class="badge-container">${badgeHtml}</div>
-                </div>
-                <div class="flex items-center justify-center py-3">
-                    ${iconHtml}
-                </div>
-                <div class="flex justify-between items-center mt-auto pt-2 border-t border-slate-700/50">
-                    <div class="flex items-center gap-1.5 text-sm text-slate-400">
-                        <i data-lucide="book-open" class="w-4 h-4"></i> <span class="score-text font-bold">${c.score}/${c.total_q}</span>
-                    </div>
-                    <div class="flex items-center gap-1.5 text-sm font-bold text-blue-400">
-                        <span>${c.diamond}</span> <i data-lucide="diamond" class="w-4 h-4 fill-current"></i>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderDashboard(userData) {
-            let accountsHtml = accounts.map((acc, i) => `
-                <div class="flex justify-between items-center p-3 hover:bg-slate-700/50 cursor-pointer border-b border-slate-700/50 transition-colors" onclick="switchAccount(${i})">
-                    <div>
-                        <div class="text-white font-bold text-sm">${acc.name}</div>
-                        <div class="text-slate-400 text-xs">${acc.id}</div>
-                    </div>
-                    ${i === currentAccountIndex ? '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>' : ''}
-                </div>
-            `).join('');
-
-            app.innerHTML = `
-                <div class="min-h-screen pb-20">
-                    <header class="glass sticky top-0 z-40 border-b border-slate-800 pt-[env(safe-area-inset-top)]">
-                        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-                            
-                            <div class="relative flex items-center gap-2">
-                                <!-- زرار الإعدادات -->
-                                <button onclick="openSettings()" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
-                                    <i data-lucide="settings" class="w-6 h-6 text-slate-300"></i>
-                                </button>
-                                
-                                <div class="flex items-center gap-3 cursor-pointer select-none" onclick="toggleAccountsMenu()">
-                                    <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                        <i data-lucide="user" class="w-5 h-5 text-blue-400"></i>
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <h1 class="text-base font-bold text-white">${userData.custom_name}</h1>
-                                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
-                                        </div>
-                                        <p class="text-xs text-slate-400" dir="ltr">${userData.user_id}</p>
-                                    </div>
-                                </div>
-                                
-                                <div id="accountsMenu" class="dropdown-menu glass rounded-xl overflow-hidden shadow-2xl mt-2">
-                                    <div class="p-3 bg-slate-800/80 border-b border-slate-700">
-                                        <span class="text-xs font-bold text-slate-300">الحسابات المحفوظة</span>
-                                    </div>
-                                    ${accountsHtml}
-                                    <button onclick="editProfileName()" class="w-full text-right p-3 text-blue-400 hover:bg-slate-700/50 flex items-center gap-2 text-sm font-bold border-b border-slate-700/50 transition-colors">
-                                        <i data-lucide="edit-2" class="w-4 h-4"></i> تعديل اسم الطالب
-                                    </button>
-                                    <button onclick="addNewAccount()" class="w-full text-right p-3 text-emerald-400 hover:bg-slate-700/50 flex items-center gap-2 text-sm font-bold transition-colors">
-                                        <i data-lucide="plus-circle" class="w-4 h-4"></i> إضافة حساب جديد
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <div class="flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-700">
-                                    <span class="text-xs font-bold text-slate-300">الجواهر</span>
-                                    <span class="text-base font-black text-blue-400" id="totalDiamonds">${userData.total_diamonds}</span>
-                                    <i data-lucide="diamond" class="w-4 h-4 text-blue-400 fill-current"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
-                    <main class="max-w-7xl mx-auto px-4 mt-6">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
-                            <div>
-                                <h2 class="text-2xl font-bold text-white mb-1">المراحل</h2>
-                                <p class="text-sm text-slate-400">أكمل جميع المراحل (1 - 42) بضمان 100%</p>
-                            </div>
-                            <div class="flex flex-wrap gap-3 w-full md:w-auto">
-                                <button id="toggleLogsBtn" class="flex-1 md:flex-none px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 flex items-center justify-center gap-2 text-sm transition-colors">
-                                    <i data-lucide="terminal" class="w-4 h-4"></i> <span>السجل</span>
-                                </button>
-                                <button id="makePerfectBtn" class="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2 text-sm transition-all">
-                                    <i data-lucide="crown" class="w-4 h-4"></i> <span>PERFECT للكل</span>
-                                </button>
-                                <button id="solveAllBtn" class="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 text-sm transition-all">
-                                    <i data-lucide="play" class="w-4 h-4 fill-current"></i> <span>حل الكل</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="chaptersGrid"></div>
-                    </main>
-                </div>
-            `;
-            initIcons();
-
-            const grid = document.getElementById('chaptersGrid');
-            chaptersData.forEach(c => {
-                let div = document.createElement('div');
-                div.id = `chap-${c.id}`;
-                div.className = `chapter-card glass rounded-2xl p-3 flex flex-col relative overflow-hidden group border-t-4 ${c.badge === 'PERFECT' ? 'border-t-emerald-500' : (c.badge === 'CLEAR' ? 'border-t-blue-500' : 'border-t-slate-600')}`;
-                div.innerHTML = getCardHTML(c);
-                
-                div.addEventListener('click', () => {
-                    if (isRunning) return alert("في عملية حل شغالة بالفعل!");
-                    startSolving('single', c.id, c.num);
-                });
-                grid.appendChild(div);
-            });
-            initIcons();
-
-            document.getElementById('toggleLogsBtn').addEventListener('click', () => {
-                logsContainer.classList.toggle('hidden');
-                logsContainer.classList.toggle('flex');
-            });
-
-            document.getElementById('makePerfectBtn').addEventListener('click', () => {
-                if (isRunning) return alert("في عملية حل شغالة بالفعل!");
-                startSolving('perfect');
-            });
-
-            document.getElementById('solveAllBtn').addEventListener('click', () => {
-                if (isRunning) return alert("في عملية حل شغالة بالفعل!");
-                startSolving('all');
-            });
-            
-            document.addEventListener('click', function(event) {
-                let menu = document.getElementById('accountsMenu');
-                let container = menu ? menu.previousElementSibling : null;
-                if (menu && menu.classList.contains('active') && container && !container.contains(event.target)) {
-                    menu.classList.remove('active');
-                }
-            });
-        }
-
-        // --- صفحة الإعدادات ---
         function openSettings() {
             let currentAcc = accounts[currentAccountIndex];
             let html = `
                 <div class="space-y-6">
                     <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-4">
                         <h3 class="text-lg font-bold text-white border-b border-slate-700 pb-2">إعدادات الحساب</h3>
-                        
                         <div class="flex justify-between items-center">
                             <span class="text-slate-300">اسم الطالب</span>
-                            <button onclick="editProfileName(); closeModal();" class="text-blue-400 font-bold flex items-center gap-1 text-sm">
-                                <i data-lucide="edit-2" class="w-4 h-4"></i> تعديل
-                            </button>
+                            <button onclick="editProfileName(); closeModal();" class="text-blue-400 font-bold flex items-center gap-1 text-sm"><i data-lucide="edit-2" class="w-4 h-4"></i> تعديل</button>
                         </div>
-                        
                         <div class="flex justify-between items-center">
                             <span class="text-slate-300">رقم الطالب (ID)</span>
                             <span class="font-mono text-emerald-400">${currentAcc ? currentAcc.id : 'غير محدد'}</span>
                         </div>
-
                         <div class="flex justify-between items-center">
                             <span class="text-slate-300">كلمة المرور</span>
                             <span class="font-mono text-rose-400">${currentAcc ? currentAcc.password : 'غير محدد'}</span>
                         </div>
                     </div>
-
                     <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-3">
                         <h3 class="text-lg font-bold text-white border-b border-slate-700 pb-2">أدوات متقدمة</h3>
-                        
                         <button onclick="openStats(); closeModal();" class="w-full flex items-center gap-3 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-xl transition-colors">
                             <i data-lucide="bar-chart-2" class="w-5 h-5 text-blue-400"></i>
                             <span class="text-white font-bold">إحصائيات الحسابات</span>
                         </button>
-
                         <button onclick="openReview(); closeModal();" class="w-full flex items-center gap-3 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-xl transition-colors">
                             <i data-lucide="book-open" class="w-5 h-5 text-emerald-400"></i>
                             <span class="text-white font-bold">المراجعة (الأسئلة والإجابات)</span>
                         </button>
                     </div>
-
                     <div class="bg-red-500/10 p-6 rounded-2xl border border-red-500/20 space-y-3">
                         <h3 class="text-lg font-bold text-red-400 border-b border-red-500/20 pb-2">منطقة الخطر</h3>
                         <button onclick="logoutCurrent()" class="w-full flex items-center justify-center gap-3 p-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-colors font-bold">
@@ -644,11 +435,121 @@
             }
         }
 
+        function getCardHTML(c) {
+            let badgeHtml = '';
+            if (c.badge === 'PERFECT') badgeHtml = `<span class="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20 badge-text">PERFECT</span>`;
+            else if (c.badge === 'CLEAR') badgeHtml = `<span class="text-[10px] font-black text-blue-400 bg-blue-400/10 px-2 py-1 rounded-md border border-blue-400/20 badge-text">CLEAR</span>`;
+            else badgeHtml = `<span class="text-[10px] font-black text-rose-400 bg-rose-400/10 px-2 py-1 rounded-md border border-rose-400/20 badge-text">RETRY</span>`;
+
+            let iconHtml = c.badge === 'PERFECT' ? `
+                <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform icon-container">
+                    <i data-lucide="crown" class="w-6 h-6 text-emerald-400"></i>
+                </div>
+            ` : `
+                <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center group-hover:scale-110 transition-transform icon-container">
+                    <i data-lucide="play" class="w-5 h-5 text-slate-400 fill-current"></i>
+                </div>
+            `;
+
+            return `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-sm font-bold text-slate-300">مرحلة ${c.num}</span>
+                    <div class="badge-container">${badgeHtml}</div>
+                </div>
+                <div class="flex items-center justify-center py-3">${iconHtml}</div>
+                <div class="flex justify-between items-center mt-auto pt-2 border-t border-slate-700/50">
+                    <div class="flex items-center gap-1.5 text-sm text-slate-400">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> <span class="score-text font-bold">${c.score}/${c.total_q}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-sm font-bold text-blue-400">
+                        <span>${c.diamond}</span> <i data-lucide="diamond" class="w-4 h-4 fill-current"></i>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboard(userData) {
+            let accountsHtml = accounts.map((acc, i) => `
+                <div class="flex justify-between items-center p-3 hover:bg-slate-700/50 cursor-pointer border-b border-slate-700/50 transition-colors" onclick="switchAccount(${i})">
+                    <div><div class="text-white font-bold text-sm">${acc.name}</div><div class="text-slate-400 text-xs">${acc.id}</div></div>
+                    ${i === currentAccountIndex ? '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>' : ''}
+                </div>
+            `).join('');
+
+            app.innerHTML = `
+                <div class="min-h-screen pb-20">
+                    <header class="glass sticky top-0 z-40 border-b border-slate-800 pt-[env(safe-area-inset-top)]">
+                        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                            <div class="relative flex items-center gap-2">
+                                <button onclick="openSettings()" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+                                    <i data-lucide="settings" class="w-6 h-6 text-slate-300"></i>
+                                </button>
+                                <div class="flex items-center gap-3 cursor-pointer select-none" onclick="toggleAccountsMenu()">
+                                    <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                                        <i data-lucide="user" class="w-5 h-5 text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2"><h1 class="text-base font-bold text-white">${userData.custom_name}</h1><i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i></div>
+                                        <p class="text-xs text-slate-400" dir="ltr">${userData.user_id}</p>
+                                    </div>
+                                </div>
+                                <div id="accountsMenu" class="dropdown-menu glass rounded-xl overflow-hidden shadow-2xl mt-2">
+                                    <div class="p-3 bg-slate-800/80 border-b border-slate-700"><span class="text-xs font-bold text-slate-300">الحسابات المحفوظة</span></div>
+                                    ${accountsHtml}
+                                    <button onclick="editProfileName()" class="w-full text-right p-3 text-blue-400 hover:bg-slate-700/50 flex items-center gap-2 text-sm font-bold border-b border-slate-700/50 transition-colors"><i data-lucide="edit-2" class="w-4 h-4"></i> تعديل اسم الطالب</button>
+                                    <button onclick="addNewAccount()" class="w-full text-right p-3 text-emerald-400 hover:bg-slate-700/50 flex items-center gap-2 text-sm font-bold transition-colors"><i data-lucide="plus-circle" class="w-4 h-4"></i> إضافة حساب جديد</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-700">
+                                    <span class="text-xs font-bold text-slate-300">الجواهر</span>
+                                    <span class="text-base font-black text-blue-400" id="totalDiamonds">${userData.total_diamonds}</span>
+                                    <i data-lucide="diamond" class="w-4 h-4 text-blue-400 fill-current"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    <main class="max-w-7xl mx-auto px-4 mt-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
+                            <div><h2 class="text-2xl font-bold text-white mb-1">المراحل</h2><p class="text-sm text-slate-400">أكمل جميع المراحل (1 - 42) بضمان 100%</p></div>
+                            <div class="flex flex-wrap gap-3 w-full md:w-auto">
+                                <button id="toggleLogsBtn" class="flex-1 md:flex-none px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 flex items-center justify-center gap-2 text-sm transition-colors"><i data-lucide="terminal" class="w-4 h-4"></i> <span>السجل</span></button>
+                                <button id="makePerfectBtn" class="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2 text-sm transition-all"><i data-lucide="crown" class="w-4 h-4"></i> <span>PERFECT للكل</span></button>
+                                <button id="solveAllBtn" class="flex-1 md:flex-none px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 text-sm transition-all"><i data-lucide="play" class="w-4 h-4 fill-current"></i> <span>حل الكل (بأقصى سرعة)</span></button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="chaptersGrid"></div>
+                    </main>
+                </div>
+            `;
+            initIcons();
+
+            const grid = document.getElementById('chaptersGrid');
+            chaptersData.forEach(c => {
+                let div = document.createElement('div');
+                div.id = `chap-${c.id}`;
+                div.className = `chapter-card glass rounded-2xl p-3 flex flex-col relative overflow-hidden group border-t-4 ${c.badge === 'PERFECT' ? 'border-t-emerald-500' : (c.badge === 'CLEAR' ? 'border-t-blue-500' : 'border-t-slate-600')}`;
+                div.innerHTML = getCardHTML(c);
+                div.addEventListener('click', () => { if (!isRunning) startSolving('single', c.id, c.num); });
+                grid.appendChild(div);
+            });
+            initIcons();
+
+            document.getElementById('toggleLogsBtn').addEventListener('click', () => { logsContainer.classList.toggle('hidden'); logsContainer.classList.toggle('flex'); });
+            document.getElementById('makePerfectBtn').addEventListener('click', () => { if (!isRunning) startSolving('perfect'); });
+            document.getElementById('solveAllBtn').addEventListener('click', () => { if (!isRunning) startSolving('all'); });
+            
+            document.addEventListener('click', function(event) {
+                let menu = document.getElementById('accountsMenu');
+                let container = menu ? menu.previousElementSibling : null;
+                if (menu && menu.classList.contains('active') && container && !container.contains(event.target)) menu.classList.remove('active');
+            });
+        }
+
         function updateCardInstant(chapId, score, total, isPerfect) {
             let c = chaptersData.find(x => x.id === chapId);
             if (!c) return;
-            c.score = score;
-            c.badge = isPerfect ? 'PERFECT' : (score > 0 ? 'CLEAR' : 'RETRY');
+            c.score = score; c.badge = isPerfect ? 'PERFECT' : (score > 0 ? 'CLEAR' : 'RETRY');
             let div = document.getElementById(`chap-${chapId}`);
             if (!div) return;
             div.className = `chapter-card glass rounded-2xl p-3 flex flex-col relative overflow-hidden group border-t-4 ${isPerfect ? 'border-t-emerald-500 flash-perfect' : (score > 0 ? 'border-t-blue-500' : 'border-t-slate-600')}`;
@@ -657,14 +558,14 @@
             if (isPerfect) setTimeout(() => div.classList.remove('flash-perfect'), 500);
         }
 
+        // --- نظام السجل السريع جداً ---
         let logBuffer = [];
         let isLogScheduled = false;
         function appendLog(msg, type="info") {
+            // لو التطبيق بيحل، منكتبش اللوجز عشان الشاشة متتقلش
+            if (isRunning) return; 
             logBuffer.push({msg, type});
-            if (!isLogScheduled) {
-                isLogScheduled = true;
-                requestAnimationFrame(flushLogs);
-            }
+            if (!isLogScheduled) { isLogScheduled = true; requestAnimationFrame(flushLogs); }
         }
         function flushLogs() {
             let terminal = document.getElementById('logTerminal');
@@ -678,8 +579,7 @@
             }
             terminal.appendChild(fragment);
             terminal.scrollTop = terminal.scrollHeight;
-            logBuffer = [];
-            isLogScheduled = false;
+            logBuffer = []; isLogScheduled = false;
         }
 
         async function startSolving(mode, singleId = null, singleNum = null) {
@@ -688,63 +588,45 @@
             AndroidBridge.startBackgroundService();
             playSilentAudio();
             
-            logsContainer.classList.remove('hidden');
-            logsContainer.classList.add('flex');
+            // مسح السجل عشان السرعة
             document.getElementById('logTerminal').innerHTML = '';
 
             let targets = [];
-            if (mode === 'single') {
-                targets.push({ id: singleId, num: singleNum });
-            } else {
-                targets = chaptersData.filter(c => c.badge !== 'PERFECT');
-            }
+            if (mode === 'single') targets.push({ id: singleId, num: singleNum });
+            else targets = chaptersData.filter(c => c.badge !== 'PERFECT');
 
             if (targets.length === 0) {
-                appendLog("🎉 كل المراحل مكتملة بالفعل!", "success");
-                isRunning = false;
-                AndroidBridge.stopBackgroundService();
+                isRunning = false; AndroidBridge.stopBackgroundService();
                 return;
             }
 
-            appendLog(`🚀 بدء حل ${targets.length} مرحلة متبقية...`, "header");
-
             try {
+                // السرعة 0ms - بنبعت الطلبات ورا بعضها على طول
                 for (let t of targets) {
                     if (!isRunning) break;
-                    if (isStoppedByDashboard()) {
-                        appendLog("⏹️ تم إيقاف التطبيق من لوحة التحكم!", "error");
-                        AndroidBridge.sendNotification("تم إيقاف الحل", "تم الإيقاف من لوحة التحكم");
-                        break;
-                    }
-                    appendLog(`\n========== حل المرحلة ${t.num} ==========`, "header");
                     await solveChapter(t.id, t.num);
-                    
-                    AndroidBridge.sendNotification("تم حل المرحلة " + t.num + " بنجاح", "Mohamed App");
+                    // تحديث كارت المرحلة بس
                     let acc = accounts[currentAccountIndex];
                     if (acc) {
                         let c = chaptersData.find(x => x.id === t.id);
                         if (c && c.badge === "PERFECT") acc.solved = (acc.solved || 0) + 1;
                         saveAccounts();
-                        reportToDashboard();
                     }
-                    await sleep(10); 
+                    await sleep(0); // بنسيب الـ JS ياخد نفسه عشان يحدث الشاشة
                 }
-                if (isRunning) appendLog("🎉🎉🎉 انتهى الحل بالكامل!", "success");
+                AndroidBridge.sendNotification("تم إنهاء الحل", "كل المراحل اتحلت بنجاح!");
             } catch(e) {
-                appendLog("❌ خطأ: " + e.message, "error");
+                AndroidBridge.sendNotification("خطأ", e.message);
             } finally {
                 isRunning = false;
                 AndroidBridge.stopBackgroundService();
-                if (accounts[currentAccountIndex]) {
-                    fetchDataAndRender(accounts[currentAccountIndex]); // تحديث الإحصائيات بعد الحل
-                }
             }
         }
 
         async function solveChapter(chapId, chapNum) {
             if (!isRunning) return;
             let r = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId, null));
-            if (!r || r.status !== 200) { appendLog("فشل جلب الفصل", "error"); return; }
+            if (!r || r.status !== 200) return;
 
             let data = safeParse(r.body) || {};
             let lectures = data.lectures || [];
@@ -753,42 +635,38 @@
             for (let lec of lectures) {
                 if (!isRunning) return;
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id, null);
-                await sleep(10);
-
+                await sleep(0);
                 let lr = safeParse(AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lec.id, null));
                 if (lr && lr.status === 200) {
                     let lrData = safeParse(lr.body) || {};
                     for (let t of (lrData.talks || [])) {
                         if (t.type === 'try') {
                             let tryData = (t.body && t.body.codes && t.body.codes[0]) || {};
-                            let ans = tryData.model_answer;
-                            if (ans) {
-                                AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: tryData.lang || 'javascript', answer: ans}}}));
-                                await sleep(10);
+                            if (tryData.model_answer) {
+                                AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: tryData.lang || 'javascript', answer: tryData.model_answer}}}));
+                                await sleep(0);
                             }
                         }
                     }
                 }
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id + "/complete", null);
-                await sleep(10);
+                await sleep(0);
             }
 
-            if (lectures.length > 0) await sleep(20);
+            if (lectures.length > 0) await sleep(0);
             if (!isRunning) return;
 
             let q = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId + "/test", null));
-            if (!q || q.status !== 200) { appendLog("فشل جلب الأسئلة", "error"); return; }
+            if (!q || q.status !== 200) return;
 
             let questions = [];
             let qData = safeParse(q.body);
             if (Array.isArray(qData)) {
                 for (let item of qData) {
-                    if (item.question && item.question.id) {
-                        questions.push({ id: item.question.id, type: item.question.type, content: item.question.content });
-                    }
+                    if (item.question && item.question.id) questions.push({ id: item.question.id, type: item.question.type });
                 }
             }
-            if (questions.length === 0) { appendLog("لا أسئلة", "error"); return; }
+            if (questions.length === 0) return;
 
             await solveTwoPass(chapId, chapNum, questions, testType);
         }
@@ -799,69 +677,53 @@
             let ep = "/api/study/students/" + prefix + "-questions";
             let answers = {};
 
-            appendLog("🔵 PASS 1/2: جمع الإجابات...", "header");
+            // PASS 1
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(10);
+            await sleep(0);
 
-            for (let idx = 0; idx < questions.length; idx++) {
+            for (let item of questions) {
                 if (!isRunning) return;
-                let item = questions[idx];
-                if (item.type === "choice") {
-                    AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: parseInt(item.id + "1")}));
-                } else {
-                    AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
-                }
-                await sleep(10);
+                if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: parseInt(item.id + "1")}));
+                else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
+                await sleep(0);
             }
-            await sleep(50);
+            await sleep(0);
 
             let r1 = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
             if (r1 && r1.status === 200) {
                 let res = safeParse(r1.body).result || safeParse(r1.body);
                 for (let cr of (res.choice_results || [])) {
                     let correct = (cr.choices || []).find(c => c.correct === true || c.is_correct === true);
-                    if (cr.question_id && correct && correct.choice) answers[cr.question_id] = { choice_id: correct.choice.id, text: correct.choice.content };
+                    if (cr.question_id && correct && correct.choice) answers[cr.question_id] = { choice_id: correct.choice.id };
                 }
                 for (let dr of (res.description_results || [])) {
                     if (dr.question_id && dr.model_answer) answers[dr.question_id] = { answer_code: dr.model_answer };
                 }
             }
 
-            appendLog("🟢 PASS 2/2: إرسال الإجابات الصحيحة...", "header");
-            await sleep(20);
+            // PASS 2
             AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
             AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(10);
+            await sleep(0);
 
             let solved = 0;
-            for (let idx = 0; idx < questions.length; idx++) {
+            for (let item of questions) {
                 if (!isRunning) return;
-                let item = questions[idx];
-                let qText = cleanText(item.content);
-                
                 if (answers[item.id]) {
                     let ans = answers[item.id];
-                    let aText = item.type === "choice" ? cleanText(ans.text) : ans.answer_code;
-                    
-                    appendLog(`Q: ${qText}`, "q");
-                    appendLog(`A: ${aText}`, "a");
-
                     if (item.type === "choice") {
-                        let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: ans.choice_id})));
+                        let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify(ans)));
                         if (r && r.status === 200) solved++;
                     } else {
-                        let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: ans.answer_code})));
+                        let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify(ans)));
                         if (r && r.status === 200) solved++;
                     }
-                } else {
-                    appendLog(`Q: ${qText}`, "q");
-                    appendLog("❌ لم يتم العثور على إجابة", "error");
                 }
-                await sleep(10);
+                await sleep(0);
             }
             
-            await sleep(50);
+            await sleep(0);
             let rf = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
             let score = solved; 
             if (rf && rf.status === 200) {
@@ -870,8 +732,6 @@
             }
             
             let isPerfect = (score >= total);
-            appendLog("🎉 النتيجة: " + score + "/" + total + (isPerfect ? " 🔥" : ""), isPerfect ? "success" : "error");
-            
             updateCardInstant(chapId, score, total, isPerfect);
         }
 
