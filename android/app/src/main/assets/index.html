@@ -6,125 +6,108 @@
     <title>AL SHAER X</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Cairo', sans-serif; background: #0a0a0f; color: #fff; overflow-x: hidden; margin: 0; padding: 0; }
-        .neon-glow { box-shadow: 0 0 15px rgba(0, 255, 255, 0.5), 0 0 30px rgba(0, 255, 255, 0.2); }
-        .neon-text { text-shadow: 0 0 10px rgba(0, 255, 255, 0.8); }
-        .glass { background: rgba(15, 15, 25, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(0, 255, 255, 0.2); }
+        body { font-family: 'Cairo', sans-serif; background: #0f172a; color: #f8fafc; overflow-x: hidden; margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
+        body.light { background: #f1f5f9; color: #0f172a; }
         
-        #splash { position: fixed; inset: 0; background: linear-gradient(135deg, #0a0a0f 0%, #1a0033 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease-out; }
-        #splash.hidden { opacity: 0; pointer-events: none; }
-        .progress-bar-container { width: 80%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; margin-top: 20px; }
-        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe); box-shadow: 0 0 10px #00f2fe; transition: width 0.3s ease; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body.light .glass { background: rgba(255, 255, 255, 0.8); border-color: rgba(0, 0, 0, 0.1); }
         
-        .btn-primary { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #000; font-weight: 900; transition: all 0.3s; }
-        .btn-primary:active { transform: scale(0.95); box-shadow: none; }
-        .btn-danger { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); color: #fff; font-weight: 900; }
-        
-        input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
-        input:focus { border-color: #00f2fe; box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); outline: none; }
-        
-        .chapter-card { transition: all 0.2s; cursor: pointer; background: rgba(20, 20, 35, 0.8); border: 1px solid rgba(255,255,255,0.05); }
-        .chapter-card:hover { transform: translateY(-5px); box-shadow: 0 0 20px rgba(0, 242, 254, 0.3); border-color: #00f2fe; }
-        
-        #logTerminal { font-family: monospace; direction: ltr; text-align: left; font-size: 13px; line-height: 1.6; }
-        .log-header { color: #00f2fe; font-weight: bold; margin-top: 8px; border-top: 1px solid #333; padding-top: 4px; }
-        .log-q { color: #fbbf24; font-weight: bold; }
-        .log-a { color: #34d399; font-weight: bold; }
-        .log-success { color: #10b981; font-weight: bold; }
-        .log-error { color: #ef4444; font-weight: bold; }
+        .chapter-card { transition: all 0.2s; cursor: pointer; background: #1e293b; border: 1px solid #334155; }
+        body.light .chapter-card { background: #ffffff; border-color: #e2e8f0; }
+        .chapter-card:active { transform: scale(0.95); }
 
-        /* تأثير تحميل الزرار */
-        .loading-spinner { border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid #000; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
+        #logTerminal { font-family: monospace; direction: ltr; text-align: left; font-size: 13px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
+        .btn-primary { background: #3b82f6; color: white; transition: 0.3s; }
+        .btn-primary:active { background: #2563eb; transform: scale(0.98); }
+        .btn-danger { background: #ef4444; color: white; transition: 0.3s; }
+        .btn-danger:active { background: #dc2626; transform: scale(0.98); }
+
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Splash Screen */
+        #splash { position: fixed; inset: 0; background: #0f172a; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
+        .progress-bar { width: 200px; height: 6px; background: #334155; border-radius: 10px; overflow: hidden; margin-top: 15px; }
+        .progress-fill { height: 100%; width: 0%; background: #3b82f6; transition: width 0.3s; }
     </style>
 </head>
 <body>
 
-    <!-- Splash Screen -->
     <div id="splash">
-        <div class="w-24 h-24 mb-6 neon-glow rounded-3xl flex items-center justify-center bg-gradient-to-br from-cyan-400 to-blue-600">
-            <i data-lucide="zap" class="w-12 h-12 text-black"></i>
+        <div class="w-24 h-24 bg-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/50">
+            <i data-lucide="zap" class="w-12 h-12 text-white"></i>
         </div>
-        <h1 class="text-3xl font-black text-center mb-2 neon-text">مرحبا بك في تطبيق<br>الشاعر لحل مراحل كيورو</h1>
-        <p class="text-cyan-400 font-bold mb-4">AL SHAER X</p>
-        <div class="progress-bar-container"><div class="progress-fill" id="splash-progress"></div></div>
-        <p class="mt-2 font-bold text-lg text-white" id="splash-percent">0%</p>
+        <h1 class="text-3xl font-black text-center mb-2">مرحبا بك في<br>تطبيق الشاعر</h1>
+        <p class="text-blue-400 font-bold mb-4">لحل مراحل كيورو بضمان 100%</p>
+        <div class="progress-bar"><div class="progress-fill" id="splash-progress"></div></div>
+        <p class="mt-2 font-bold text-slate-400" id="splash-percent">0%</p>
         
-        <!-- زر واتساب في البداية -->
-        <a href="https://wa.me/201555085382" class="mt-12 flex items-center gap-2 bg-green-600/20 border border-green-500 text-green-400 px-4 py-2 rounded-full font-bold text-sm">
-            <i data-lucide="phone" class="w-4 h-4"></i> تواصل معنا (واتساب)
+        <a href="https://wa.me/201555085382" class="mt-12 flex items-center gap-2 bg-slate-800 px-5 py-2.5 rounded-full font-bold text-sm border border-slate-700">
+            <i data-lucide="phone" class="w-4 h-4 text-green-400"></i> تواصل مع المطور
         </a>
     </div>
 
-    <!-- Offline Screen -->
-    <div id="offline-screen" class="fixed inset-0 bg-[#0a0a0f] z-[99999] hidden flex-col items-center justify-center">
-        <i data-lucide="wifi-off" class="w-24 h-24 text-red-500 mb-6"></i>
-        <h2 class="text-3xl font-black mb-2">لا يوجد اتصال بالإنترنت</h2>
-        <button onclick="location.reload()" class="mt-6 px-6 py-3 btn-primary rounded-xl">إعادة المحاولة</button>
-    </div>
-
-    <div id="app" class="min-h-screen relative"></div>
+    <div id="app" class="min-h-screen"></div>
     
-    <!-- Logs Screen -->
-    <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[60vh] bg-[#0a0a0f] border-t border-cyan-500/30 z-50 flex-col hidden rounded-t-3xl shadow-2xl">
-        <div class="flex justify-between items-center px-4 py-3 bg-[#12121a] rounded-t-3xl">
-            <div class="flex items-center gap-2 text-sm font-bold text-cyan-400"><i data-lucide="terminal" class="w-5 h-5"></i> السجل المباشر</div>
-            <button id="closeLogsBtn" class="p-1.5 bg-slate-800 rounded-lg"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+    <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[60vh] bg-[#0a0a0f] z-50 flex-col hidden shadow-2xl border-t border-slate-700">
+        <div class="flex justify-between items-center px-4 py-3 bg-[#1e293b]">
+            <div class="flex items-center gap-2 text-sm font-bold text-emerald-400"><i data-lucide="terminal" class="w-5 h-5"></i> السجل المباشر</div>
+            <button id="closeLogsBtn" class="p-1.5 bg-slate-700 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         <div id="logTerminal" class="flex-1 p-4 overflow-y-auto"></div>
     </div>
 
-    <!-- Modal -->
-    <div id="modalContainer" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="glass w-full max-w-2xl h-[85vh] rounded-3xl flex flex-col overflow-hidden">
-            <div class="flex justify-between items-center p-4 border-b border-white/10">
-                <h2 id="modalTitle" class="text-xl font-black text-cyan-400">عنوان</h2>
-                <button onclick="closeModal()" class="p-2 bg-white/5 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div id="modalContainer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="glass w-full max-w-md rounded-3xl flex flex-col overflow-hidden max-h-[85vh]">
+            <div class="flex justify-between items-center p-5 border-b border-slate-700">
+                <h2 id="modalTitle" class="text-xl font-black text-white">الإعدادات</h2>
+                <button onclick="closeModal()" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700"><i data-lucide="x" class="w-5 h-5 text-slate-300"></i></button>
             </div>
-            <div id="modalBody" class="flex-1 overflow-y-auto p-4"></div>
+            <div id="modalBody" class="flex-1 overflow-y-auto p-5"></div>
         </div>
     </div>
 
     <script>
-        // --- الأصوات (Base64) ---
-        const soundSuccess = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="); // يتم استبداله بصوت حقيقي لو توفر
-        const soundError = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
-        function playSuccess() { soundSuccess.volume = 0.5; soundSuccess.play().catch(()=>{}); }
-        function playError() { soundError.volume = 0.5; soundError.play().catch(()=>{}); }
-
         const BASE = "https://me-tp.qureo.education";
         const PORTAL = "https://me-portal.qureo.education";
+        const FIREBASE_URL = "https://pubg-skin-362e2-default-rtdb.firebaseio.com";
+        
+        let lang = localStorage.getItem('lang') || 'ar';
+        let theme = localStorage.getItem('theme') || 'dark';
+        let accounts = JSON.parse(localStorage.getItem('accounts')) || [];
+        let currentAccountIndex = parseInt(localStorage.getItem('current_idx') || -1);
         let chaptersData = [], isRunning = false;
-        let accounts = JSON.parse(localStorage.getItem('ahmed_accounts')) || [];
-        let currentAccountIndex = parseInt(localStorage.getItem('ahmed_current_account') || -1);
 
         function initIcons() { if(typeof lucide !== 'undefined') lucide.createIcons(); }
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
         function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-        function cleanText(t) { return t ? t.replace(/\[\[bdi\]\]|\[\[\/bdi\]\]|\[\[bold\]\]|\[\[\/bold\]\]|\[\[code\]\]|\[\[\/code\]\]/g, "").replace(/\n/g, " ").trim() : ""; }
+        
+        function applyTheme() {
+            if (theme === 'light') document.body.classList.add('light');
+            else document.body.classList.remove('light');
+        }
+        applyTheme();
 
-        // Splash Logic
+        // Splash
         let splashProgress = 0;
-        let splashInterval = setInterval(() => {
-            if (!navigator.onLine) { clearInterval(splashInterval); document.getElementById('splash').classList.add('hidden'); document.getElementById('offline-screen').style.display = 'flex'; return; }
-            splashProgress += Math.random() * 15;
+        let splashInt = setInterval(() => {
+            splashProgress += Math.random() * 20;
             if (splashProgress > 100) splashProgress = 100;
             document.getElementById('splash-progress').style.width = splashProgress + '%';
             document.getElementById('splash-percent').innerText = Math.floor(splashProgress) + '%';
             if (splashProgress === 100) {
-                clearInterval(splashInterval);
-                setTimeout(() => { document.getElementById('splash').classList.add('hidden'); startApp(); }, 500);
+                clearInterval(splashInt);
+                setTimeout(() => { document.getElementById('splash').style.display = 'none'; startApp(); }, 400);
             }
         }, 100);
 
-        window.addEventListener('offline', () => { document.getElementById('offline-screen').style.display = 'flex'; });
-        window.addEventListener('online', () => { document.getElementById('offline-screen').style.display = 'none'; });
-
         function startApp() {
-            if (accounts.length > 0) {
-                if (currentAccountIndex < 0 || currentAccountIndex >= accounts.length) currentAccountIndex = 0;
+            if (accounts.length > 0 && currentAccountIndex >= 0) {
                 fetchDataAndRender(accounts[currentAccountIndex]);
             } else renderLogin();
         }
@@ -132,25 +115,25 @@
         function renderLogin(errorMsg = '') {
             document.getElementById('app').innerHTML = `
                 <div class="min-h-screen flex items-center justify-center p-6">
-                    <div class="glass w-full max-w-md p-8 rounded-3xl relative">
+                    <div class="glass w-full max-w-sm p-8 rounded-3xl relative">
                         <div class="text-center mb-8">
-                            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 neon-text mb-2">AL SHAER X</h1>
-                            <p class="text-slate-400 font-bold">مراحل كيورو بضمان 100%</p>
+                            <h1 class="text-3xl font-black text-blue-500 mb-2">AL SHAER X</h1>
+                            <p class="text-slate-400 text-sm font-bold">أدخل بياناتك للبدء</p>
                         </div>
                         ${errorMsg ? `<div class="bg-red-500/20 text-red-400 p-3 rounded-xl mb-4 text-sm font-bold text-center border border-red-500/50">${errorMsg}</div>` : ''}
                         <div class="space-y-4">
-                            <div><label class="block text-sm font-bold text-slate-300 mb-1">اسم الطالب (اختياري)</label><input type="text" id="customName" class="w-full rounded-xl px-4 py-3 text-white" placeholder="..."></div>
-                            <div><label class="block text-sm font-bold text-slate-300 mb-1">رقم الطالب (ID)</label><input type="text" id="studentId" class="w-full rounded-xl px-4 py-3 text-white" placeholder="..."></div>
-                            <div><label class="block text-sm font-bold text-slate-300 mb-1">كلمة المرور</label><input type="password" id="password" class="w-full rounded-xl px-4 py-3 text-white" placeholder="********"></div>
+                            <div><label class="block text-sm font-bold text-slate-300 mb-1">اسم الطالب (اختياري)</label><input type="text" id="cName" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500"></div>
+                            <div><label class="block text-sm font-bold text-slate-300 mb-1">رقم الطالب (ID)</label><input type="text" id="sid" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="481006599"></div>
+                            <div><label class="block text-sm font-bold text-slate-300 mb-1">كلمة المرور</label><input type="password" id="pwd" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" placeholder="********"></div>
                             
-                            <button id="loginBtn" class="w-full btn-primary py-4 rounded-xl text-lg flex justify-center items-center gap-2 mt-6 neon-glow">
-                                <div class="loading-spinner" id="loginSpinner"></div>
-                                <span id="loginText">دخول للمنصة</span>
+                            <button id="loginBtn" class="w-full btn-primary py-3.5 rounded-xl font-black text-lg flex justify-center items-center gap-2 mt-4 shadow-lg shadow-blue-500/30">
+                                <div class="spinner" id="loginSpin"></div>
+                                <span id="loginTxt">دخول</span>
                                 <i data-lucide="log-in" class="w-5 h-5" id="loginIcon"></i>
                             </button>
                             
-                            <a href="https://wa.me/201555085382" class="w-full flex justify-center items-center gap-2 text-green-400 font-bold mt-4 text-sm hover:underline">
-                                <i data-lucide="phone" class="w-4 h-4"></i> للتواصل واتساب
+                            <a href="https://wa.me/201555085382" class="w-full flex justify-center items-center gap-2 text-slate-400 hover:text-green-400 font-bold mt-4 text-xs transition-colors">
+                                <i data-lucide="phone" class="w-4 h-4"></i> تواصل واتساب
                             </a>
                         </div>
                     </div>
@@ -158,79 +141,63 @@
             `;
             initIcons();
             
-            document.getElementById('loginBtn').addEventListener('click', async () => {
-                const sid = document.getElementById('studentId').value.trim();
-                const pwd = document.getElementById('password').value.trim();
-                const cName = document.getElementById('customName').value.trim();
-                if(!sid || !pwd) { renderLogin("أدخل البيانات كاملة"); playError(); return; }
+            document.getElementById('loginBtn').onclick = async () => {
+                const sid = document.getElementById('sid').value.trim();
+                const pwd = document.getElementById('pwd').value.trim();
+                const cName = document.getElementById('cName').value.trim();
+                if(!sid || !pwd) { renderLogin("أدخل البيانات كاملة"); return; }
 
-                const btn = document.getElementById('loginBtn');
-                const txt = document.getElementById('loginText');
-                const spinner = document.getElementById('loginSpinner');
-                const icon = document.getElementById('loginIcon');
-                
-                btn.disabled = true;
-                btn.classList.add('opacity-80');
-                txt.innerText = "جاري الدخول...";
-                spinner.style.display = "block";
-                icon.style.display = "none";
+                const btn = document.getElementById('loginBtn'), txt = document.getElementById('loginTxt'), spin = document.getElementById('loginSpin'), icon = document.getElementById('loginIcon');
+                btn.disabled = true; txt.innerText = "جاري الدخول..."; spin.style.display = "block"; icon.style.display = "none";
 
                 AndroidBridge.clearCookies();
-                let loginRes = safeParse(AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd})));
+                let res = safeParse(AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd})));
                 
-                if (!loginRes || (loginRes.status !== 200 && loginRes.status !== 302)) {
-                    playError();
-                    renderLogin("بيانات غير صحيحة أو السيرفر مشغول"); return;
+                if (!res || (res.status !== 200 && res.status !== 302)) {
+                    renderLogin("بيانات خاطئة أو السيرفر مشغول"); return;
                 }
 
                 AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
                 AndroidBridge.saveSession();
 
                 let verify = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null));
-                if (!verify || verify.status !== 200) { 
-                    playError();
-                    renderLogin("فشل التحقق من البيانات"); return; 
-                }
+                if (!verify || verify.status !== 200) { renderLogin("فشل التحقق من البيانات"); return; }
 
-                playSuccess();
+                // حفظ الحساب وإحصائيات فايربيز
                 let cookies = AndroidBridge.getSavedCookies();
                 let accData = { id: sid, password: pwd, name: cName || "طالب " + sid, cookies: cookies, solved: 0 };
                 let exIdx = accounts.findIndex(a => a.id === sid);
                 if (exIdx >= 0) { accounts[exIdx] = accData; currentAccountIndex = exIdx; }
                 else { accounts.push(accData); currentAccountIndex = accounts.length - 1; }
-                localStorage.setItem('ahmed_accounts', JSON.stringify(accounts));
-                localStorage.setItem('ahmed_current_account', currentAccountIndex);
-                
+                localStorage.setItem('accounts', JSON.stringify(accounts));
+                localStorage.setItem('current_idx', currentAccountIndex);
+
+                // تسجيل الحساب في فايربيز
+                fetch(`${FIREBASE_URL}/registered_accounts/${sid}.json`, { method: 'PUT', body: 'true' });
+
                 fetchDataAndRender();
-            });
+            };
         }
 
-        async function fetchDataAndRender(account) {
-            if (account && account.cookies) {
+        async function fetchDataAndRender(acc) {
+            if (acc && acc.cookies) {
                 AndroidBridge.clearCookies();
-                account.cookies.split("; ").forEach(p => { let idx = p.indexOf('='); if (idx > 0) AndroidBridge.setCookie(p.substring(0, idx), p.substring(idx + 1)); });
+                acc.cookies.split("; ").forEach(p => { let idx = p.indexOf('='); if (idx > 0) AndroidBridge.setCookie(p.substring(0, idx), p.substring(idx + 1)); });
             }
 
             let me = safeParse(safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null)).body);
             let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
-            let totalDiamonds = (d && d.status === 200) ? safeParse(d.body) : 0;
+            let diamonds = (d && d.status === 200) ? safeParse(d.body) : 0;
 
             let c = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/sections/5/chapters", null));
             let progressMap = {};
-            if (c && c.status === 200) {
-                let arr = safeParse(c.body);
-                if(Array.isArray(arr)) arr.forEach(item => progressMap[item.chapter_id] = item);
-            }
+            if (c && c.status === 200) { let arr = safeParse(c.body); if(Array.isArray(arr)) arr.forEach(i => progressMap[i.chapter_id] = i); }
 
             let chaps = safeParse(AndroidBridge.request("GET", BASE + "/api/study/sections/5", null));
             let qMap = {};
-            if (chaps && chaps.status === 200) {
-                let chObj = safeParse(chaps.body);
-                if (chObj.chapters) chObj.chapters.forEach(ch => qMap[ch.id] = ch.question_count || 5);
-            }
+            if (chaps && chaps.status === 200) { let chObj = safeParse(chaps.body); if (chObj.chapters) chObj.chapters.forEach(ch => qMap[ch.id] = ch.question_count || 5); }
 
-            chaptersData = [];
-            let perfectCount = 0;
+            chaptersData = []; let perfectCount = 0;
             for (let i = 1; i <= 42; i++) {
                 let chapId = 90000 + i;
                 let info = progressMap[chapId] || {};
@@ -242,36 +209,36 @@
                 chaptersData.push({ id: chapId, num: i, score: score, total_q: qCount, badge: badge });
             }
 
-            if (account) { account.solved = perfectCount; localStorage.setItem('ahmed_accounts', JSON.stringify(accounts)); }
+            if (acc) { acc.solved = perfectCount; localStorage.setItem('accounts', JSON.stringify(accounts)); }
 
             document.getElementById('app').innerHTML = `
                 <div class="min-h-screen pb-20">
-                    <header class="glass sticky top-0 z-40 border-b border-cyan-500/30">
-                        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                    <header class="glass sticky top-0 z-40 border-b border-slate-700">
+                        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                             <div class="flex items-center gap-3">
-                                <button onclick="openSettings()" class="p-2 bg-white/5 rounded-xl border border-white/10"><i data-lucide="settings" class="w-5 h-5 text-cyan-400"></i></button>
+                                <button onclick="openSettings()" class="p-2 bg-slate-800 rounded-xl hover:bg-slate-700 transition"><i data-lucide="settings" class="w-5 h-5 text-slate-300"></i></button>
                                 <div>
-                                    <h1 class="text-lg font-black text-cyan-400 neon-text">${account.name}</h1>
-                                    <p class="text-xs font-bold text-slate-400" dir="ltr">${account.id}</p>
+                                    <h1 class="text-base font-black text-white">${acc.name}</h1>
+                                    <p class="text-[10px] font-bold text-slate-400" dir="ltr">${acc.id}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-xl border border-white/10">
-                                <span class="text-xs font-bold text-slate-300">جواهر</span>
-                                <span class="text-lg font-black text-cyan-400">${totalDiamonds}</span>
+                            <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                                <span class="text-xs font-bold text-slate-400">جواهر</span>
+                                <span class="text-sm font-black text-blue-400">${diamonds}</span>
                             </div>
                         </div>
                     </header>
                     
                     <main class="max-w-7xl mx-auto px-4 mt-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-2xl font-black text-white">المراحل</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-black text-white">المراحل (${perfectCount}/42)</h2>
                             <div class="flex gap-2">
-                                <button onclick="document.getElementById('logsContainer').classList.toggle('hidden'); document.getElementById('logsContainer').classList.toggle('flex')" class="px-3 py-2 bg-slate-800 rounded-xl text-xs font-bold border border-white/10">السجل</button>
-                                <button onclick="startSolving('perfect')" class="px-3 py-2 btn-primary rounded-xl text-xs">PERFECT للكل</button>
-                                <button onclick="startSolving('all')" class="px-3 py-2 btn-danger rounded-xl text-xs">حل الكل</button>
+                                <button onclick="document.getElementById('logsContainer').classList.toggle('hidden'); document.getElementById('logsContainer').classList.toggle('flex')" class="px-3 py-1.5 bg-slate-800 rounded-lg text-xs font-bold border border-slate-700 text-slate-300">السجل</button>
+                                <button onclick="startSolving('perfect')" class="px-3 py-1.5 btn-primary rounded-lg text-xs">حل المتبقي</button>
+                                <button onclick="startSolving('all')" class="px-3 py-1.5 btn-danger rounded-lg text-xs">حل الكل</button>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="chaptersGrid"></div>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3" id="chaptersGrid"></div>
                     </main>
                 </div>
             `;
@@ -281,34 +248,86 @@
             chaptersData.forEach(c => {
                 let div = document.createElement('div');
                 div.id = `chap-${c.id}`;
-                div.className = `chapter-card rounded-2xl p-3 flex flex-col relative ${c.badge === 'PERFECT' ? 'border-emerald-500/50' : (c.badge === 'CLEAR' ? 'border-blue-500/50' : 'border-white/5')}`;
+                let borderClass = c.badge === 'PERFECT' ? 'border-emerald-500/50' : (c.badge === 'CLEAR' ? 'border-blue-500/50' : 'border-slate-700');
+                div.className = `chapter-card rounded-xl p-2 flex flex-col items-center justify-center relative ${borderClass}`;
                 div.innerHTML = `
-                    <div class="flex justify-between items-start mb-2"><span class="text-xs font-bold text-slate-300">مرحلة ${c.num}</span></div>
-                    <div class="flex items-center justify-center py-2">
-                        <i data-lucide="${c.badge === 'PERFECT' ? 'crown' : 'play'}" class="w-6 h-6 ${c.badge === 'PERFECT' ? 'text-emerald-400' : 'text-slate-500'}"></i>
-                    </div>
-                    <div class="flex justify-center text-xs font-bold text-cyan-400 mt-2">${c.score}/${c.total_q}</div>
+                    <span class="text-xs font-bold text-slate-300 mb-1">م ${c.num}</span>
+                    <i data-lucide="${c.badge === 'PERFECT' ? 'crown' : 'play'}" class="w-5 h-5 ${c.badge === 'PERFECT' ? 'text-emerald-400' : 'text-slate-500'} mb-1"></i>
+                    <span class="text-[10px] font-bold text-cyan-400">${c.score}/${c.total_q}</span>
                 `;
-                div.addEventListener('click', () => { if (!isRunning) startSolving('single', c.id, c.num); });
+                div.onclick = () => { if (!isRunning) startSolving('single', c.id, c.num); };
                 grid.appendChild(div);
             });
             initIcons();
         }
 
         function openSettings() {
-            let html = `
+            document.getElementById('modalBody').innerHTML = `
                 <div class="space-y-4">
-                    <a href="https://wa.me/201555085382" class="flex items-center justify-center gap-2 w-full py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-black transition-colors">
-                        <i data-lucide="phone" class="w-5 h-5"></i> تواصل مع المطور (واتساب)
-                    </a>
-                    <button onclick="if(confirm('تسجيل خروج؟')) { localStorage.clear(); location.reload(); }" class="w-full py-4 bg-red-600/20 text-red-400 border border-red-500/50 rounded-xl font-bold">تسجيل خروج</button>
+                    <!-- الإحصائيات -->
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                        <h3 class="text-sm font-bold text-slate-300 mb-3 border-b border-slate-700 pb-2">إحصائيات التطبيق</h3>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs text-slate-400">عدد المستخدمين</span>
+                            <span class="text-sm font-black text-blue-400" id="stat-users">...</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-400">عدد الحسابات المسجلة</span>
+                            <span class="text-sm font-black text-emerald-400" id="stat-accounts">...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- الأزرار -->
+                    <div class="space-y-2">
+                        <button onclick="toggleTheme()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold text-sm border border-slate-700 flex justify-between px-4">
+                            <span>تغيير المظهر (${theme === 'dark' ? 'فاتح' : 'داكن'})</span> <i data-lucide="sun-moon" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="toggleLang()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold text-sm border border-slate-700 flex justify-between px-4">
+                            <span>اللغة (${lang === 'ar' ? 'English' : 'عربي'})</span> <i data-lucide="languages" class="w-4 h-4"></i>
+                        </button>
+                        <a href="https://wa.me/201555085382" class="w-full py-3 bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 rounded-xl font-bold text-sm flex justify-center items-center gap-2">
+                            <i data-lucide="phone" class="w-4 h-4"></i> تواصل مع المطور
+                        </a>
+                        <button onclick="logout()" class="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl font-bold text-sm">تسجيل خروج</button>
+                    </div>
                 </div>
             `;
-            document.getElementById('modalTitle').innerText = "الإعدادات";
-            document.getElementById('modalBody').innerHTML = html;
-            document.getElementById('modalContainer').classList.remove('hidden');
-            document.getElementById('modalContainer').classList.add('flex');
+            document.getElementById('modalContainer').classList.remove('hidden'); document.getElementById('modalContainer').classList.add('flex');
             initIcons();
+            loadStats();
+        }
+
+        async function loadStats() {
+            try {
+                let uRes = await fetch(`${FIREBASE_URL}/users.json?shallow=true`);
+                let uData = await uRes.json();
+                document.getElementById('stat-users').innerText = uData ? Object.keys(uData).length : 0;
+                
+                let aRes = await fetch(`${FIREBASE_URL}/registered_accounts.json?shallow=true`);
+                let aData = await aRes.json();
+                document.getElementById('stat-accounts').innerText = aData ? Object.keys(aData).length : 0;
+            } catch(e) { console.log(e); }
+        }
+
+        function toggleTheme() {
+            theme = theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', theme);
+            applyTheme();
+            closeModal();
+        }
+
+        function toggleLang() {
+            lang = lang === 'ar' ? 'en' : 'ar';
+            localStorage.setItem('lang', lang);
+            location.reload(); // أسهل طريقة لتحديث النصوص
+        }
+
+        function logout() {
+            if(confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                localStorage.removeItem('current_idx');
+                localStorage.removeItem('accounts');
+                location.reload();
+            }
         }
 
         function closeModal() { document.getElementById('modalContainer').classList.add('hidden'); document.getElementById('modalContainer').classList.remove('flex'); }
@@ -316,29 +335,26 @@
         function appendLog(msg, type) {
             let term = document.getElementById('logTerminal');
             if(!term) return;
-            let p = document.createElement('div');
-            p.className = `log-${type}`;
-            p.innerText = msg;
-            term.appendChild(p);
+            let color = type === 'q' ? 'text-yellow-400' : type === 'a' ? 'text-emerald-400' : type === 'success' ? 'text-green-500' : type === 'error' ? 'text-red-500' : 'text-slate-300';
+            term.innerHTML += `<div class="${color}">${msg}</div>`;
             term.scrollTop = term.scrollHeight;
         }
 
-        async function startSolving(mode, singleId, singleNum) {
+        async function startSolving(mode, sId, sNum) {
             if (isRunning) return;
             isRunning = true;
             AndroidBridge.startBackgroundService();
             document.getElementById('logsContainer').classList.remove('hidden'); document.getElementById('logsContainer').classList.add('flex');
             document.getElementById('logTerminal').innerHTML = '';
 
-            let targets = mode === 'single' ? [{ id: singleId, num: singleNum }] : chaptersData.filter(c => c.badge !== 'PERFECT');
-            appendLog(`🚀 بدء الحل بأقصى سرعة...`, "header");
+            let targets = mode === 'single' ? [{ id: sId, num: sNum }] : chaptersData.filter(c => c.badge !== 'PERFECT');
+            appendLog(`🚀 بدء الحل (${mode === 'single' ? 'مرحلة' : targets.length + ' مرحلة'})...`, 'header');
 
             for (let t of targets) {
-                if (!isRunning) break;
-                appendLog(`\n--- المرحلة ${t.num} ---`, "header");
+                appendLog(`\n--- المرحلة ${t.num} ---`, 'header');
                 await solveChapter(t.id, t.num);
                 AndroidBridge.sendNotification("تم حل المرحلة " + t.num, "AL SHAER X");
-                await sleep(0); // سرعة 0ms
+                await sleep(0); 
             }
             isRunning = false;
             AndroidBridge.stopBackgroundService();
@@ -362,7 +378,7 @@
             if (!q || q.status !== 200) return;
             let questions = [];
             if (Array.isArray(safeParse(q.body))) {
-                safeParse(q.body).forEach(item => { if (item.question && item.question.id) questions.push({ id: item.question.id, type: item.question.type, content: item.question.content }); });
+                safeParse(q.body).forEach(i => { if (i.question && i.question.id) questions.push({ id: i.question.id, type: i.question.type, content: i.question.content }); });
             }
             if (questions.length === 0) return;
 
@@ -401,10 +417,8 @@
             for (let item of questions) {
                 if (answers[item.id]) {
                     let ans = answers[item.id];
-                    let aText = item.type === "choice" ? cleanText(ans.text) : ans.answer_code;
-                    appendLog(`Q: ${cleanText(item.content)}`, "q");
-                    appendLog(`A: ${aText}`, "a");
-
+                    appendLog(`Q: ${item.content}`, "q");
+                    appendLog(`A: ${ans.text || 'Code'}`, "a");
                     if (item.type === "choice") { let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: ans.choice_id}))); if (r && r.status === 200) solved++; }
                     else { let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: ans.answer_code}))); if (r && r.status === 200) solved++; }
                 }
@@ -420,10 +434,14 @@
             appendLog(`النتيجة: ${score}/${total} ${isPerfect ? '🔥' : ''}`, isPerfect ? "success" : "error");
             
             let card = document.getElementById(`chap-${chapId}`);
-            if (card) { card.className = `chapter-card rounded-2xl p-3 flex flex-col relative ${isPerfect ? 'border-emerald-500/50' : 'border-rose-500/50'}`; card.innerHTML = `<div class="text-center font-bold text-xs">${chapNum}</div><div class="text-center text-emerald-400 font-black mt-2">${score}/${total}</div>`; }
+            if (card) { 
+                card.className = `chapter-card rounded-xl p-2 flex flex-col items-center justify-center relative ${isPerfect ? 'border-emerald-500/50' : 'border-rose-500/50'}`;
+                card.innerHTML = `<span class="text-xs font-bold text-slate-300 mb-1">م ${chapNum}</span><i data-lucide="${isPerfect?'crown':'play'}" class="w-5 h-5 ${isPerfect?'text-emerald-400':'text-slate-500'} mb-1"></i><span class="text-[10px] font-bold text-cyan-400">${score}/${total}</span>`;
+                initIcons();
+            }
         }
         
-        document.getElementById('closeLogsBtn').addEventListener('click', () => { document.getElementById('logsContainer').classList.add('hidden'); document.getElementById('logsContainer').classList.remove('flex'); });
+        document.getElementById('closeLogsBtn').onclick = () => { document.getElementById('logsContainer').classList.add('hidden'); document.getElementById('logsContainer').classList.remove('flex'); };
     </script>
 </body>
 </html>

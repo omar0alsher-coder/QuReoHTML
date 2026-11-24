@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        webView.setBackgroundColor(android.graphics.Color.parseColor("#09090b"));
+        webView.setBackgroundColor(android.graphics.Color.parseColor("#0f172a"));
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -190,7 +190,7 @@ public class MainActivity extends Activity {
                     conn.setRequestProperty("Origin", origin);
                     conn.setRequestProperty("Referer", referer);
                     conn.setRequestProperty("Accept", "*/*");
-                    conn.setRequestProperty("Connection", "keep-alive"); // سرعة قصوى
+                    conn.setRequestProperty("Connection", "keep-alive"); 
 
                     String cookieStr = serializeCookies();
                     if (!cookieStr.isEmpty()) conn.setRequestProperty("Cookie", cookieStr);
