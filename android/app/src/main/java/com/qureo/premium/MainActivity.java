@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        webView.setBackgroundColor(android.graphics.Color.parseColor("#09090b"));
+        webView.setBackgroundColor(android.graphics.Color.parseColor("#e0e5ec")); // لون رمادي فاتح
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -130,7 +130,6 @@ public class MainActivity extends Activity {
         super.onResume();
         if (webView != null) {
             webView.resumeTimers();
-            // فحص الشاشة السوداء: لو الـ WebView فاضي أو واخد مساحة 0، نعمل ريفريش
             webView.evaluateJavascript("if(!document.getElementById('app') || document.getElementById('app').innerHTML.trim() === '') { location.reload(); }", null);
         }
     }
@@ -143,23 +142,13 @@ public class MainActivity extends Activity {
 
     public class Bridge {
         @JavascriptInterface
-        public void saveSession() {
-            prefs.edit().putString("cookies", serializeCookies()).apply();
-        }
-
+        public void saveSession() { prefs.edit().putString("cookies", serializeCookies()).apply(); }
         @JavascriptInterface
-        public void clearCookies() { 
-            cookies.clear(); 
-            prefs.edit().remove("cookies").apply();
-        }
-
+        public void clearCookies() { cookies.clear(); prefs.edit().remove("cookies").apply(); }
         @JavascriptInterface
         public String getSavedCookies() { return serializeCookies(); }
-
         @JavascriptInterface
-        public void setCookie(String name, String value) {
-            if (name != null && !name.isEmpty()) cookies.put(name, value == null ? "" : value);
-        }
+        public void setCookie(String name, String value) { if (name != null && !name.isEmpty()) cookies.put(name, value == null ? "" : value); }
 
         @JavascriptInterface
         public void sendNotification(String title, String message) {
@@ -170,47 +159,31 @@ public class MainActivity extends Activity {
                 mNotificationManager.createNotificationChannel(channel);
             }
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(MainActivity.this, channelId)
-                    .setSmallIcon(android.R.drawable.ic_dialog_info)
-                    .setContentTitle(title)
-                    .setContentText(message)
-                    .setAutoCancel(true)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH);
+                    .setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title).setContentText(message).setAutoCancel(true).setPriority(NotificationCompat.PRIORITY_HIGH);
             mNotificationManager.notify((int) System.currentTimeMillis(), mBuilder.build());
         }
 
         @JavascriptInterface
         public void startBackgroundService() {
             Intent serviceIntent = new Intent(MainActivity.this, SolverService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
-            } else {
-                startService(serviceIntent);
-            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent); else startService(serviceIntent);
         }
 
         @JavascriptInterface
-        public void stopBackgroundService() {
-            Intent serviceIntent = new Intent(MainActivity.this, SolverService.class);
-            stopService(serviceIntent);
-        }
+        public void stopBackgroundService() { stopService(new Intent(MainActivity.this, SolverService.class)); }
 
         @JavascriptInterface
         public String request(String method, String urlStr, String body) {
             HttpURLConnection conn = null;
             try {
                 URL url = new URL(urlStr);
-                int redirects = 0;
-                int maxRedirects = 10;
-                int code = 0;
-                String finalMethod = method;
-                String finalBody = body;
+                int redirects = 0; int maxRedirects = 10; int code = 0;
+                String finalMethod = method; String finalBody = body;
 
                 while (redirects <= maxRedirects) {
                     conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod(finalMethod);
-                    conn.setInstanceFollowRedirects(false);
-                    conn.setConnectTimeout(10000);
-                    conn.setReadTimeout(10000);
+                    conn.setRequestMethod(finalMethod); conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(10000); conn.setReadTimeout(10000);
 
                     String origin = "https://" + url.getHost();
                     String referer = url.getHost().contains("portal") ? origin + "/login" : origin + "/";
@@ -226,33 +199,21 @@ public class MainActivity extends Activity {
                     if (!cookieStr.isEmpty()) conn.setRequestProperty("Cookie", cookieStr);
 
                     if (finalBody != null && !finalBody.isEmpty() && (finalMethod.equals("POST") || finalMethod.equals("PUT") || finalMethod.equals("PATCH"))) {
-                        conn.setDoOutput(true);
-                        OutputStream os = conn.getOutputStream();
-                        os.write(finalBody.getBytes("UTF-8"));
-                        os.flush();
-                        os.close();
+                        conn.setDoOutput(true); OutputStream os = conn.getOutputStream(); os.write(finalBody.getBytes("UTF-8")); os.flush(); os.close();
                     }
 
                     code = conn.getResponseCode();
-
                     Map<String, List<String>> headers = conn.getHeaderFields();
                     List<String> setCookies = headers.get("Set-Cookie");
                     if (setCookies == null) setCookies = headers.get("set-cookie");
-                    if (setCookies != null) {
-                        for (String c : setCookies) mergeCookie(c);
-                    }
+                    if (setCookies != null) for (String c : setCookies) mergeCookie(c);
 
                     if (code >= 300 && code < 400) {
                         String location = conn.getHeaderField("Location");
                         if (location != null && !location.isEmpty()) {
                             url = new URL(url, location);
-                            if (code == 303 || code == 302 || code == 301) {
-                                finalMethod = "GET"; 
-                                finalBody = null;
-                            }
-                            redirects++;
-                            conn.disconnect();
-                            continue; 
+                            if (code == 303 || code == 302 || code == 301) { finalMethod = "GET"; finalBody = null; }
+                            redirects++; conn.disconnect(); continue; 
                         }
                     }
                     break; 
@@ -262,38 +223,26 @@ public class MainActivity extends Activity {
                 StringBuilder sb = new StringBuilder();
                 if (is != null) {
                     BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-                    String line;
-                    while ((line = br.readLine()) != null) sb.append(line);
+                    String line; while ((line = br.readLine()) != null) sb.append(line);
                     br.close();
                 }
                 return "{\"status\":" + code + ",\"body\":" + JSONObject.quote(sb.toString()) + "}";
             } catch (Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":" + JSONObject.quote(msg) + "}") + "}";
-            } finally {
-                if (conn != null) conn.disconnect();
-            }
+            } finally { if (conn != null) conn.disconnect(); }
         }
     }
 
     private void mergeCookie(String setCookie) {
-        if (setCookie == null) return;
-        String[] parts = setCookie.split(";");
-        String pair = parts[0].trim();
-        int eq = pair.indexOf('=');
-        if (eq <= 0) return;
-        String name = pair.substring(0, eq).trim();
-        String value = pair.substring(eq + 1).trim();
-        if (name.isEmpty()) return;
-        cookies.put(name, value);
+        if (setCookie == null) return; String[] parts = setCookie.split(";"); String pair = parts[0].trim();
+        int eq = pair.indexOf('='); if (eq <= 0) return; String name = pair.substring(0, eq).trim(); String value = pair.substring(eq + 1).trim();
+        if (name.isEmpty()) return; cookies.put(name, value);
     }
 
     private String serializeCookies() {
         StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, String> e : cookies.entrySet()) {
-            if (sb.length() > 0) sb.append("; ");
-            sb.append(e.getKey()).append("=").append(e.getValue());
-        }
+        for (Map.Entry<String, String> e : cookies.entrySet()) { if (sb.length() > 0) sb.append("; "); sb.append(e.getKey()).append("=").append(e.getValue()); }
         return sb.toString();
     }
 }
