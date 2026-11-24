@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        webView.setBackgroundColor(android.graphics.Color.parseColor("#0f172a"));
+        webView.setBackgroundColor(android.graphics.Color.parseColor("#020617"));
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -118,7 +118,29 @@ public class MainActivity extends Activity {
         }
 
         webView.addJavascriptInterface(new Bridge(), "AndroidBridge");
-        webView.setWebViewClient(new WebViewClient());
+        
+        // ⭐ هنا حل مشكلة الواتساب واللينكات الخارجية
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url.startsWith("whatsapp://") || url.startsWith("https://wa.me") || url.startsWith("intent://")) {
+                    try {
+                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                        intent.setComponent(null);
+                        startActivity(intent);
+                        return true;
+                    } catch (Exception e) {
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                            return true;
+                        } catch (Exception ex) { return true; }
+                    }
+                }
+                return false;
+            }
+        });
+        
         webView.setWebChromeClient(new WebChromeClient()); 
 
         webView.loadUrl("file:///android_asset/index.html");
@@ -179,7 +201,7 @@ public class MainActivity extends Activity {
                 while (redirects <= maxRedirects) {
                     conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod(finalMethod); conn.setInstanceFollowRedirects(false);
-                    conn.setConnectTimeout(10000); conn.setReadTimeout(10000);
+                    conn.setConnectTimeout(15000); conn.setReadTimeout(15000);
 
                     String origin = "https://" + url.getHost();
                     String referer = url.getHost().contains("portal") ? origin + "/login" : origin + "/";
