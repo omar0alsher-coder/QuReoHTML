@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        webView.setBackgroundColor(android.graphics.Color.parseColor("#e0e5ec")); // لون رمادي فاتح
+        webView.setBackgroundColor(android.graphics.Color.parseColor("#09090b"));
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -112,7 +112,6 @@ public class MainActivity extends Activity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setRenderPriority(WebSettings.RenderPriority.HIGH);
-        s.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
@@ -128,10 +127,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (webView != null) {
-            webView.resumeTimers();
-            webView.evaluateJavascript("if(!document.getElementById('app') || document.getElementById('app').innerHTML.trim() === '') { location.reload(); }", null);
-        }
+        if (webView != null) webView.resumeTimers();
     }
 
     @Override
@@ -190,10 +186,11 @@ public class MainActivity extends Activity {
 
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("X-Requested-With", "mark.via.gp");
-                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36");
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
                     conn.setRequestProperty("Origin", origin);
                     conn.setRequestProperty("Referer", referer);
                     conn.setRequestProperty("Accept", "*/*");
+                    conn.setRequestProperty("Connection", "keep-alive"); // سرعة قصوى
 
                     String cookieStr = serializeCookies();
                     if (!cookieStr.isEmpty()) conn.setRequestProperty("Cookie", cookieStr);
@@ -213,7 +210,7 @@ public class MainActivity extends Activity {
                         if (location != null && !location.isEmpty()) {
                             url = new URL(url, location);
                             if (code == 303 || code == 302 || code == 301) { finalMethod = "GET"; finalBody = null; }
-                            redirects++; conn.disconnect(); continue; 
+                            redirects++; continue; 
                         }
                     }
                     break; 
@@ -228,9 +225,8 @@ public class MainActivity extends Activity {
                 }
                 return "{\"status\":" + code + ",\"body\":" + JSONObject.quote(sb.toString()) + "}";
             } catch (Exception e) {
-                String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":" + JSONObject.quote(msg) + "}") + "}";
-            } finally { // conn.disconnect(); تم تعطيله عشان تسريع الاتصال
+                return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":\"" + e.getMessage() + "\"}") + "}";
+            }
         }
     }
 

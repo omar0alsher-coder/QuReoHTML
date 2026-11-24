@@ -3,119 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ahmed الشاعر</title>
+    <title>AL SHAER X</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* تصميم 2050 Neumorphism */
-        :root { --bg: #e0e5ec; --text: #1e293b; --shadow-light: #ffffff; --shadow-dark: #a3b1c6; }
-        body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; margin: 0; padding: 0; transition: background 0.3s; }
+        body { font-family: 'Cairo', sans-serif; background: #0a0a0f; color: #fff; overflow-x: hidden; margin: 0; padding: 0; }
+        .neon-glow { box-shadow: 0 0 15px rgba(0, 255, 255, 0.5), 0 0 30px rgba(0, 255, 255, 0.2); }
+        .neon-text { text-shadow: 0 0 10px rgba(0, 255, 255, 0.8); }
+        .glass { background: rgba(15, 15, 25, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(0, 255, 255, 0.2); }
         
-        /* Neumorphism Elements */
-        .neu-flat { background: var(--bg); box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); border-radius: 20px; }
-        .neu-inset { background: var(--bg); box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light); border-radius: 15px; }
-        .neu-btn { background: var(--bg); box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); border-radius: 15px; transition: all 0.2s; cursor: pointer; color: var(--text); font-weight: bold; }
-        .neu-btn:active { box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light); transform: scale(0.98); }
-        
-        .chapter-card { transition: all 0.2s; cursor: pointer; will-change: transform; }
-        .chapter-card:hover { transform: translateY(-4px); }
-
-        /* شاشة البداية (Splash) */
-        #splash { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease-out; }
+        #splash { position: fixed; inset: 0; background: linear-gradient(135deg, #0a0a0f 0%, #1a0033 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease-out; }
         #splash.hidden { opacity: 0; pointer-events: none; }
-        .progress-bar-container { width: 80%; height: 10px; background: var(--bg); box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light); border-radius: 10px; overflow: hidden; margin-top: 20px; }
-        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #64748b, #94a3b8); transition: width 0.3s ease; }
+        .progress-bar-container { width: 80%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; margin-top: 20px; }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe); box-shadow: 0 0 10px #00f2fe; transition: width 0.3s ease; }
         
-        /* شاشة انقطاع النت */
-        #offline-screen { position: fixed; inset: 0; background: var(--bg); z-index: 99999; display: none; flex-direction: column; align-items: center; justify-content: center; }
-
-        #logTerminal { font-family: monospace; direction: ltr; text-align: left; font-size: 12px; line-height: 1.5; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        .btn-primary { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #000; font-weight: 900; transition: all 0.3s; }
+        .btn-primary:active { transform: scale(0.95); box-shadow: none; }
+        .btn-danger { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); color: #fff; font-weight: 900; }
         
-        .log-header { color: #475569; font-weight: bold; margin-top: 8px; border-top: 1px solid #cbd5e1; padding-top: 4px; }
-        .log-q { color: #d97706; font-weight: bold; }
-        .log-a { color: #059669; font-weight: bold; }
+        input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
+        input:focus { border-color: #00f2fe; box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); outline: none; }
+        
+        .chapter-card { transition: all 0.2s; cursor: pointer; background: rgba(20, 20, 35, 0.8); border: 1px solid rgba(255,255,255,0.05); }
+        .chapter-card:hover { transform: translateY(-5px); box-shadow: 0 0 20px rgba(0, 242, 254, 0.3); border-color: #00f2fe; }
+        
+        #logTerminal { font-family: monospace; direction: ltr; text-align: left; font-size: 13px; line-height: 1.6; }
+        .log-header { color: #00f2fe; font-weight: bold; margin-top: 8px; border-top: 1px solid #333; padding-top: 4px; }
+        .log-q { color: #fbbf24; font-weight: bold; }
+        .log-a { color: #34d399; font-weight: bold; }
         .log-success { color: #10b981; font-weight: bold; }
         .log-error { color: #ef4444; font-weight: bold; }
 
-        /* إخفاء العناصر */
-        .hide { display: none !important; }
+        /* تأثير تحميل الزرار */
+        .loading-spinner { border: 3px solid rgba(0,0,0,0.1); border-top: 3px solid #000; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <!-- شاشة البداية Splash -->
+    <!-- Splash Screen -->
     <div id="splash">
-        <h1 class="text-4xl font-black mb-4 text-center text-gray-800">مرحبا بك في تطبيق<br>احمد الشاعر</h1>
-        <p class="text-gray-500 font-bold mb-8" id="splash-status">جاري التحميل...</p>
-        <div class="progress-bar-container">
-            <div class="progress-fill" id="splash-progress"></div>
+        <div class="w-24 h-24 mb-6 neon-glow rounded-3xl flex items-center justify-center bg-gradient-to-br from-cyan-400 to-blue-600">
+            <i data-lucide="zap" class="w-12 h-12 text-black"></i>
         </div>
-        <p class="mt-4 font-black text-2xl text-gray-700" id="splash-percent">0%</p>
+        <h1 class="text-3xl font-black text-center mb-2 neon-text">مرحبا بك في تطبيق<br>الشاعر لحل مراحل كيورو</h1>
+        <p class="text-cyan-400 font-bold mb-4">AL SHAER X</p>
+        <div class="progress-bar-container"><div class="progress-fill" id="splash-progress"></div></div>
+        <p class="mt-2 font-bold text-lg text-white" id="splash-percent">0%</p>
+        
+        <!-- زر واتساب في البداية -->
+        <a href="https://wa.me/201555085382" class="mt-12 flex items-center gap-2 bg-green-600/20 border border-green-500 text-green-400 px-4 py-2 rounded-full font-bold text-sm">
+            <i data-lucide="phone" class="w-4 h-4"></i> تواصل معنا (واتساب)
+        </a>
     </div>
 
-    <!-- شاشة انقطاع النت -->
-    <div id="offline-screen">
-        <i data-lucide="wifi-off" class="w-24 h-24 text-gray-400 mb-6"></i>
-        <h2 class="text-3xl font-black text-gray-800 mb-2">لا يوجد اتصال بالإنترنت</h2>
-        <p class="text-gray-500 mb-6">يرجى التحقق من اتصالك والمحاولة مرة أخرى.</p>
-        <button onclick="location.reload()" class="neu-btn px-8 py-3 text-lg">إعادة المحاولة</button>
+    <!-- Offline Screen -->
+    <div id="offline-screen" class="fixed inset-0 bg-[#0a0a0f] z-[99999] hidden flex-col items-center justify-center">
+        <i data-lucide="wifi-off" class="w-24 h-24 text-red-500 mb-6"></i>
+        <h2 class="text-3xl font-black mb-2">لا يوجد اتصال بالإنترنت</h2>
+        <button onclick="location.reload()" class="mt-6 px-6 py-3 btn-primary rounded-xl">إعادة المحاولة</button>
     </div>
 
     <div id="app" class="min-h-screen relative"></div>
     
-    <!-- شاشة السجل -->
-    <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[60vh] z-50 flex-col hidden" style="background: var(--bg); border-top: 2px solid #cbd5e1; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 20px rgba(0,0,0,0.1);">
-        <div class="flex justify-between items-center px-4 py-3 border-b border-gray-300">
-            <div class="flex items-center gap-2 text-sm font-bold text-gray-700"><i data-lucide="terminal" class="w-5 h-5"></i> سجل الحل</div>
-            <button id="closeLogsBtn" class="p-2 neu-btn"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <!-- Logs Screen -->
+    <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[60vh] bg-[#0a0a0f] border-t border-cyan-500/30 z-50 flex-col hidden rounded-t-3xl shadow-2xl">
+        <div class="flex justify-between items-center px-4 py-3 bg-[#12121a] rounded-t-3xl">
+            <div class="flex items-center gap-2 text-sm font-bold text-cyan-400"><i data-lucide="terminal" class="w-5 h-5"></i> السجل المباشر</div>
+            <button id="closeLogsBtn" class="p-1.5 bg-slate-800 rounded-lg"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
         </div>
         <div id="logTerminal" class="flex-1 p-4 overflow-y-auto"></div>
     </div>
 
-    <!-- المودال (الإعدادات والمراجعة) -->
-    <div id="modalContainer" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="w-full max-w-2xl h-[85vh] neu-flat flex flex-col overflow-hidden relative">
-            <div class="flex justify-between items-center p-4 border-b border-gray-300">
-                <h2 id="modalTitle" class="text-xl font-black text-gray-800">عنوان</h2>
-                <button onclick="closeModal()" class="p-2 neu-btn"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <!-- Modal -->
+    <div id="modalContainer" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="glass w-full max-w-2xl h-[85vh] rounded-3xl flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b border-white/10">
+                <h2 id="modalTitle" class="text-xl font-black text-cyan-400">عنوان</h2>
+                <button onclick="closeModal()" class="p-2 bg-white/5 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div id="modalBody" class="flex-1 overflow-y-auto p-4"></div>
         </div>
     </div>
 
     <script>
-        // --- إعدادات سريعة ---
+        // --- الأصوات (Base64) ---
+        const soundSuccess = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="); // يتم استبداله بصوت حقيقي لو توفر
+        const soundError = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+        function playSuccess() { soundSuccess.volume = 0.5; soundSuccess.play().catch(()=>{}); }
+        function playError() { soundError.volume = 0.5; soundError.play().catch(()=>{}); }
+
         const BASE = "https://me-tp.qureo.education";
         const PORTAL = "https://me-portal.qureo.education";
-        const FIREBASE_URL = "https://pubg-skin-362e2-default-rtdb.firebaseio.com";
-        
-        let deviceId = localStorage.getItem('device_id');
-        if (!deviceId) { deviceId = 'dev_' + Math.random().toString(36).substr(2, 9); localStorage.setItem('device_id', deviceId); }
-
-        let lang = localStorage.getItem('app_lang') || 'ar';
+        let chaptersData = [], isRunning = false;
         let accounts = JSON.parse(localStorage.getItem('ahmed_accounts')) || [];
-        let currentAccountIndex = localStorage.getItem('ahmed_current_account') !== null ? parseInt(localStorage.getItem('ahmed_current_account')) : -1;
-        let chaptersData = [];
-        let isRunning = false;
+        let currentAccountIndex = parseInt(localStorage.getItem('ahmed_current_account') || -1);
 
         function initIcons() { if(typeof lucide !== 'undefined') lucide.createIcons(); }
-        function saveAccounts() { localStorage.setItem('ahmed_accounts', JSON.stringify(accounts)); }
-        function saveCurrentAccount(idx) { currentAccountIndex = idx; localStorage.setItem('ahmed_current_account', idx); }
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
         function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-        function cleanText(text) { if (!text) return ""; return text.replace(/\[\[bdi\]\]|\[\[\/bdi\]\]|\[\[bold\]\]|\[\[\/bold\]\]|\[\[code\]\]|\[\[\/code\]\]/g, "").replace(/\n/g, " ").trim(); }
+        function cleanText(t) { return t ? t.replace(/\[\[bdi\]\]|\[\[\/bdi\]\]|\[\[bold\]\]|\[\[\/bold\]\]|\[\[code\]\]|\[\[\/code\]\]/g, "").replace(/\n/g, " ").trim() : ""; }
 
-        // --- الترجمة ---
-        const i18n = {
-            ar: { login: "دخول", id: "رقم الطالب (ID)", pass: "كلمة المرور", name: "اسم الطالب (اختياري)", solveAll: "حل الكل", perfectAll: "اجعل الكل PERFECT", settings: "الإعدادات", logs: "السجل", stats: "الإحصائيات", lang: "اللغة", totalUsers: "إجمالي المستخدمين", solvedAccs: "الحسابات المكتملة", review: "المراجعة", logout: "خروج", close: "إغلاق" },
-            en: { login: "Login", id: "Student ID", pass: "Password", name: "Name (Optional)", solveAll: "Solve All", perfectAll: "Make All PERFECT", settings: "Settings", logs: "Logs", stats: "Stats", lang: "Language", totalUsers: "Total Users", solvedAccs: "Solved Accounts", review: "Review", logout: "Logout", close: "Close" }
-        };
-        function t(key) { return i18n[lang][key] || key; }
-
-        // --- شاشة البداية ---
+        // Splash Logic
         let splashProgress = 0;
         let splashInterval = setInterval(() => {
             if (!navigator.onLine) { clearInterval(splashInterval); document.getElementById('splash').classList.add('hidden'); document.getElementById('offline-screen').style.display = 'flex'; return; }
@@ -123,10 +113,8 @@
             if (splashProgress > 100) splashProgress = 100;
             document.getElementById('splash-progress').style.width = splashProgress + '%';
             document.getElementById('splash-percent').innerText = Math.floor(splashProgress) + '%';
-            
             if (splashProgress === 100) {
                 clearInterval(splashInterval);
-                document.getElementById('splash-status').innerText = "اكتمل التحميل!";
                 setTimeout(() => { document.getElementById('splash').classList.add('hidden'); startApp(); }, 500);
             }
         }, 100);
@@ -134,97 +122,84 @@
         window.addEventListener('offline', () => { document.getElementById('offline-screen').style.display = 'flex'; });
         window.addEventListener('online', () => { document.getElementById('offline-screen').style.display = 'none'; });
 
-        async function updateFirebaseStats() {
-            try {
-                // تسجيل المستخدم
-                await fetch(`${FIREBASE_URL}/users/${deviceId}.json`, { method: 'PUT', body: JSON.stringify({time: Date.now()}) });
-                // جلب عدد المستخدمين
-                let usersRes = await fetch(`${FIREBASE_URL}/users.json?shallow=true`);
-                let usersData = await usersRes.json();
-                document.getElementById('firebase-total-users').innerText = usersData ? Object.keys(usersData).length : 0;
-
-                // جلب الحسابات المكتملة
-                let solvedRes = await fetch(`${FIREBASE_URL}/solved_accounts.json?shallow=true`);
-                let solvedData = await solvedRes.json();
-                document.getElementById('firebase-solved-accounts').innerText = solvedData ? Object.keys(solvedData).length : 0;
-            } catch(e) { console.log("Firebase error:", e); }
-        }
-
-        function markAccountAsSolved(studentId) {
-            fetch(`${FIREBASE_URL}/solved_accounts/${studentId}.json`, { method: 'PUT', body: 'true' });
-        }
-
-        // --- التطبيق الأساسي ---
         function startApp() {
-            updateFirebaseStats();
             if (accounts.length > 0) {
-                if (currentAccountIndex < 0 || currentAccountIndex >= accounts.length) saveCurrentAccount(0);
+                if (currentAccountIndex < 0 || currentAccountIndex >= accounts.length) currentAccountIndex = 0;
                 fetchDataAndRender(accounts[currentAccountIndex]);
-            } else {
-                renderLogin();
-            }
+            } else renderLogin();
         }
 
         function renderLogin(errorMsg = '') {
-            const app = document.getElementById('app');
-            app.innerHTML = `
+            document.getElementById('app').innerHTML = `
                 <div class="min-h-screen flex items-center justify-center p-6">
-                    <div class="neu-flat w-full max-w-md p-8 relative">
+                    <div class="glass w-full max-w-md p-8 rounded-3xl relative">
                         <div class="text-center mb-8">
-                            <h1 class="text-4xl font-black text-gray-800 tracking-wider mb-2">AHMED</h1>
-                            <p class="text-gray-500 font-bold">تطبيق أحمد الشاعر</p>
+                            <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 neon-text mb-2">AL SHAER X</h1>
+                            <p class="text-slate-400 font-bold">مراحل كيورو بضمان 100%</p>
                         </div>
-                        ${errorMsg ? `<div class="bg-red-100 text-red-600 p-3 rounded-xl mb-4 text-sm font-bold text-center">${errorMsg}</div>` : ''}
+                        ${errorMsg ? `<div class="bg-red-500/20 text-red-400 p-3 rounded-xl mb-4 text-sm font-bold text-center border border-red-500/50">${errorMsg}</div>` : ''}
                         <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">${t('name')}</label>
-                                <input type="text" id="customName" class="w-full neu-inset px-4 py-3 text-gray-800 focus:outline-none" placeholder="...">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">${t('id')}</label>
-                                <input type="text" id="studentId" class="w-full neu-inset px-4 py-3 text-gray-800 focus:outline-none" placeholder="481006599">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">${t('pass')}</label>
-                                <input type="password" id="password" class="w-full neu-inset px-4 py-3 text-gray-800 focus:outline-none" placeholder="********">
-                            </div>
-                            <button id="loginBtn" class="w-full neu-btn py-3 text-lg mt-4 flex justify-center items-center gap-2">
-                                <span>${t('login')}</span> <i data-lucide="log-in" class="w-5 h-5"></i>
+                            <div><label class="block text-sm font-bold text-slate-300 mb-1">اسم الطالب (اختياري)</label><input type="text" id="customName" class="w-full rounded-xl px-4 py-3 text-white" placeholder="..."></div>
+                            <div><label class="block text-sm font-bold text-slate-300 mb-1">رقم الطالب (ID)</label><input type="text" id="studentId" class="w-full rounded-xl px-4 py-3 text-white" placeholder="..."></div>
+                            <div><label class="block text-sm font-bold text-slate-300 mb-1">كلمة المرور</label><input type="password" id="password" class="w-full rounded-xl px-4 py-3 text-white" placeholder="********"></div>
+                            
+                            <button id="loginBtn" class="w-full btn-primary py-4 rounded-xl text-lg flex justify-center items-center gap-2 mt-6 neon-glow">
+                                <div class="loading-spinner" id="loginSpinner"></div>
+                                <span id="loginText">دخول للمنصة</span>
+                                <i data-lucide="log-in" class="w-5 h-5" id="loginIcon"></i>
                             </button>
+                            
+                            <a href="https://wa.me/201555085382" class="w-full flex justify-center items-center gap-2 text-green-400 font-bold mt-4 text-sm hover:underline">
+                                <i data-lucide="phone" class="w-4 h-4"></i> للتواصل واتساب
+                            </a>
                         </div>
                     </div>
                 </div>
             `;
             initIcons();
+            
             document.getElementById('loginBtn').addEventListener('click', async () => {
                 const sid = document.getElementById('studentId').value.trim();
                 const pwd = document.getElementById('password').value.trim();
                 const cName = document.getElementById('customName').value.trim();
-                if(!sid || !pwd) return;
+                if(!sid || !pwd) { renderLogin("أدخل البيانات كاملة"); playError(); return; }
 
                 const btn = document.getElementById('loginBtn');
-                btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i>...`;
-                initIcons();
+                const txt = document.getElementById('loginText');
+                const spinner = document.getElementById('loginSpinner');
+                const icon = document.getElementById('loginIcon');
+                
+                btn.disabled = true;
+                btn.classList.add('opacity-80');
+                txt.innerText = "جاري الدخول...";
+                spinner.style.display = "block";
+                icon.style.display = "none";
 
                 AndroidBridge.clearCookies();
                 let loginRes = safeParse(AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd})));
                 
                 if (!loginRes || (loginRes.status !== 200 && loginRes.status !== 302)) {
-                    renderLogin("بيانات مرفوضة"); return;
+                    playError();
+                    renderLogin("بيانات غير صحيحة أو السيرفر مشغول"); return;
                 }
 
                 AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
                 AndroidBridge.saveSession();
 
                 let verify = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null));
-                if (!verify || verify.status !== 200) { renderLogin("فشل التحقق"); return; }
+                if (!verify || verify.status !== 200) { 
+                    playError();
+                    renderLogin("فشل التحقق من البيانات"); return; 
+                }
 
+                playSuccess();
                 let cookies = AndroidBridge.getSavedCookies();
                 let accData = { id: sid, password: pwd, name: cName || "طالب " + sid, cookies: cookies, solved: 0 };
                 let exIdx = accounts.findIndex(a => a.id === sid);
-                if (exIdx >= 0) { accounts[exIdx] = accData; saveCurrentAccount(exIdx); }
-                else { accounts.push(accData); saveCurrentAccount(accounts.length - 1); }
-                saveAccounts();
+                if (exIdx >= 0) { accounts[exIdx] = accData; currentAccountIndex = exIdx; }
+                else { accounts.push(accData); currentAccountIndex = accounts.length - 1; }
+                localStorage.setItem('ahmed_accounts', JSON.stringify(accounts));
+                localStorage.setItem('ahmed_current_account', currentAccountIndex);
                 
                 fetchDataAndRender();
             });
@@ -267,63 +242,36 @@
                 chaptersData.push({ id: chapId, num: i, score: score, total_q: qCount, badge: badge });
             }
 
-            if (account) { 
-                account.solved = perfectCount; 
-                saveAccounts(); 
-                if(perfectCount === 42) markAccountAsSolved(account.id);
-            }
+            if (account) { account.solved = perfectCount; localStorage.setItem('ahmed_accounts', JSON.stringify(accounts)); }
 
-            renderDashboard({ user_id: account ? account.id : me.id, custom_name: account ? account.name : "الطالب", total_diamonds: totalDiamonds });
-        }
-
-        function getCardHTML(c) {
-            let badgeHtml = '';
-            if (c.badge === 'PERFECT') badgeHtml = `<span class="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded">PERFECT</span>`;
-            else if (c.badge === 'CLEAR') badgeHtml = `<span class="text-[10px] font-black text-blue-600 bg-blue-100 px-2 py-1 rounded">CLEAR</span>`;
-            else badgeHtml = `<span class="text-[10px] font-black text-rose-600 bg-rose-100 px-2 py-1 rounded">RETRY</span>`;
-
-            let iconHtml = c.badge === 'PERFECT' ? `<i data-lucide="crown" class="w-6 h-6 text-emerald-500"></i>` : `<i data-lucide="play" class="w-5 h-5 text-gray-500"></i>`;
-
-            return `
-                <div class="flex justify-between items-start mb-2"><span class="text-sm font-bold text-gray-700">مرحلة ${c.num}</span>${badgeHtml}</div>
-                <div class="flex items-center justify-center py-3">${iconHtml}</div>
-                <div class="flex justify-between items-center mt-auto pt-2 border-t border-gray-300">
-                    <div class="flex items-center gap-1 text-xs font-bold text-gray-600"><i data-lucide="book-open" class="w-3 h-3"></i> ${c.score}/${c.total_q}</div>
-                </div>
-            `;
-        }
-
-        function renderDashboard(userData) {
-            const app = document.getElementById('app');
-            app.innerHTML = `
+            document.getElementById('app').innerHTML = `
                 <div class="min-h-screen pb-20">
-                    <header class="sticky top-0 z-40 bg-[#e0e5ec] border-b border-gray-300">
+                    <header class="glass sticky top-0 z-40 border-b border-cyan-500/30">
                         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
                             <div class="flex items-center gap-3">
-                                <button onclick="openSettings()" class="p-2 neu-btn"><i data-lucide="settings" class="w-5 h-5 text-gray-700"></i></button>
+                                <button onclick="openSettings()" class="p-2 bg-white/5 rounded-xl border border-white/10"><i data-lucide="settings" class="w-5 h-5 text-cyan-400"></i></button>
                                 <div>
-                                    <h1 class="text-lg font-black text-gray-800">${userData.custom_name}</h1>
-                                    <p class="text-xs font-bold text-gray-500" dir="ltr">${userData.user_id}</p>
+                                    <h1 class="text-lg font-black text-cyan-400 neon-text">${account.name}</h1>
+                                    <p class="text-xs font-bold text-slate-400" dir="ltr">${account.id}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 neu-inset px-4 py-2">
-                                <span class="text-xs font-bold text-gray-600">الجواهر</span>
-                                <span class="text-lg font-black text-blue-600">${userData.total_diamonds}</span>
+                            <div class="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-xl border border-white/10">
+                                <span class="text-xs font-bold text-slate-300">جواهر</span>
+                                <span class="text-lg font-black text-cyan-400">${totalDiamonds}</span>
                             </div>
                         </div>
                     </header>
+                    
                     <main class="max-w-7xl mx-auto px-4 mt-6">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6">
-                            <div>
-                                <h2 class="text-2xl font-black text-gray-800 mb-1">المراحل</h2>
-                            </div>
-                            <div class="flex gap-3 w-full md:w-auto">
-                                <button id="logsBtn" class="flex-1 px-4 py-2 neu-btn text-gray-700 font-bold text-sm">${t('logs')}</button>
-                                <button id="perfectBtn" class="flex-1 px-4 py-2 neu-btn text-gray-700 font-bold text-sm">${t('perfectAll')}</button>
-                                <button id="solveAllBtn" class="flex-1 px-4 py-2 neu-btn text-gray-700 font-bold text-sm">${t('solveAll')}</button>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-black text-white">المراحل</h2>
+                            <div class="flex gap-2">
+                                <button onclick="document.getElementById('logsContainer').classList.toggle('hidden'); document.getElementById('logsContainer').classList.toggle('flex')" class="px-3 py-2 bg-slate-800 rounded-xl text-xs font-bold border border-white/10">السجل</button>
+                                <button onclick="startSolving('perfect')" class="px-3 py-2 btn-primary rounded-xl text-xs">PERFECT للكل</button>
+                                <button onclick="startSolving('all')" class="px-3 py-2 btn-danger rounded-xl text-xs">حل الكل</button>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="chaptersGrid"></div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="chaptersGrid"></div>
                     </main>
                 </div>
             `;
@@ -333,167 +281,79 @@
             chaptersData.forEach(c => {
                 let div = document.createElement('div');
                 div.id = `chap-${c.id}`;
-                div.className = `chapter-card neu-flat p-4 flex flex-col relative overflow-hidden group`;
-                div.innerHTML = getCardHTML(c);
+                div.className = `chapter-card rounded-2xl p-3 flex flex-col relative ${c.badge === 'PERFECT' ? 'border-emerald-500/50' : (c.badge === 'CLEAR' ? 'border-blue-500/50' : 'border-white/5')}`;
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-2"><span class="text-xs font-bold text-slate-300">مرحلة ${c.num}</span></div>
+                    <div class="flex items-center justify-center py-2">
+                        <i data-lucide="${c.badge === 'PERFECT' ? 'crown' : 'play'}" class="w-6 h-6 ${c.badge === 'PERFECT' ? 'text-emerald-400' : 'text-slate-500'}"></i>
+                    </div>
+                    <div class="flex justify-center text-xs font-bold text-cyan-400 mt-2">${c.score}/${c.total_q}</div>
+                `;
                 div.addEventListener('click', () => { if (!isRunning) startSolving('single', c.id, c.num); });
                 grid.appendChild(div);
             });
             initIcons();
-
-            document.getElementById('logsBtn').addEventListener('click', () => { document.getElementById('logsContainer').classList.toggle('hidden'); document.getElementById('logsContainer').classList.toggle('flex'); });
-            document.getElementById('perfectBtn').addEventListener('click', () => { if (!isRunning) startSolving('perfect'); });
-            document.getElementById('solveAllBtn').addEventListener('click', () => { if (!isRunning) startSolving('all'); });
         }
 
         function openSettings() {
             let html = `
-                <div class="space-y-6">
-                    <div class="neu-flat p-6 space-y-4">
-                        <h3 class="text-lg font-black text-gray-800 border-b border-gray-300 pb-2">${t('stats')}</h3>
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-gray-600">${t('totalUsers')}</span>
-                            <span class="font-black text-blue-600" id="firebase-total-users">...</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-gray-600">${t('solvedAccs')}</span>
-                            <span class="font-black text-emerald-600" id="firebase-solved-accounts">...</span>
-                        </div>
-                    </div>
-                    <div class="neu-flat p-6 space-y-4">
-                        <h3 class="text-lg font-black text-gray-800 border-b border-gray-300 pb-2">${t('lang')}</h3>
-                        <div class="flex gap-4">
-                            <button onclick="changeLang('ar')" class="flex-1 py-2 neu-btn ${lang==='ar'?'text-blue-600':'text-gray-600'}">العربية</button>
-                            <button onclick="changeLang('en')" class="flex-1 py-2 neu-btn ${lang==='en'?'text-blue-600':'text-gray-600'}">English</button>
-                        </div>
-                    </div>
-                    <div class="neu-flat p-6 space-y-4">
-                        <button onclick="openReview(); closeModal();" class="w-full py-3 neu-btn text-gray-700 font-bold">${t('review')}</button>
-                        <button onclick="logoutCurrent()" class="w-full py-3 neu-btn text-red-600 font-bold">${t('logout')}</button>
-                    </div>
+                <div class="space-y-4">
+                    <a href="https://wa.me/201555085382" class="flex items-center justify-center gap-2 w-full py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-black transition-colors">
+                        <i data-lucide="phone" class="w-5 h-5"></i> تواصل مع المطور (واتساب)
+                    </a>
+                    <button onclick="if(confirm('تسجيل خروج؟')) { localStorage.clear(); location.reload(); }" class="w-full py-4 bg-red-600/20 text-red-400 border border-red-500/50 rounded-xl font-bold">تسجيل خروج</button>
                 </div>
             `;
-            openModal(t('settings'), html);
-            updateFirebaseStats();
-        }
-
-        function changeLang(newLang) {
-            lang = newLang; localStorage.setItem('app_lang', lang); 
-            closeModal(); fetchDataAndRender(accounts[currentAccountIndex]);
-        }
-
-        function logoutCurrent() {
-            if(confirm("تسجيل خروج؟")) {
-                accounts.splice(currentAccountIndex, 1); saveAccounts(); saveCurrentAccount(-1); closeModal();
-                if(accounts.length > 0) fetchDataAndRender(accounts[0]); else renderLogin();
-            }
+            document.getElementById('modalTitle').innerText = "الإعدادات";
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('modalContainer').classList.remove('hidden');
+            document.getElementById('modalContainer').classList.add('flex');
+            initIcons();
         }
 
         function closeModal() { document.getElementById('modalContainer').classList.add('hidden'); document.getElementById('modalContainer').classList.remove('flex'); }
-        function openModal(title, html) { document.getElementById('modalTitle').innerText = title; document.getElementById('modalBody').innerHTML = html; document.getElementById('modalContainer').classList.remove('hidden'); document.getElementById('modalContainer').classList.add('flex'); initIcons(); }
 
-        async function openReview() {
-            let html = `<div class="grid grid-cols-3 gap-3">`;
-            for (let i = 1; i <= 42; i++) html += `<div onclick="loadQuestions(${90000 + i}, ${i})" class="neu-flat p-4 text-center cursor-pointer"><span class="text-lg font-black text-gray-800">${i}</span></div>`;
-            openModal(t('review'), html + `</div>`);
-        }
-
-        async function loadQuestions(chapId, chapNum) {
-            openModal("جاري التحميل...", `<div class="flex justify-center py-10"><i data-lucide="loader" class="w-10 h-10 animate-spin text-gray-500"></i></div>`);
-            AndroidBridge.request("PUT", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            await sleep(100);
-            let r = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId + "/test", null));
-            if (!r || r.status !== 200) return openModal("خطأ", `<div class="text-center text-red-500 font-bold">فشل التحميل</div>`);
-            let qData = safeParse(r.body);
-            let questions = [];
-            if (Array.isArray(qData)) for (let item of qData) if (item.question && item.question.id) questions.push({ id: item.question.id, content: item.question.content });
-            let r1 = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/test/result", null));
-            let answers = {};
-            if (r1 && r1.status === 200) {
-                let res = safeParse(r1.body).result || safeParse(r1.body);
-                for (let cr of (res.choice_results || [])) { let correct = (cr.choices || []).find(c => c.correct === true); if (cr.question_id && correct && correct.choice) answers[cr.question_id] = correct.choice.content; }
-                for (let dr of (res.description_results || [])) { if (dr.question_id && dr.model_answer) answers[dr.question_id] = dr.model_answer; }
-            }
-            AndroidBridge.request("DELETE", BASE + "/api/study/students/chapters/" + chapId + "/test", null);
-            let html = `<div class="space-y-3">`;
-            questions.forEach((q, i) => {
-                let ans = answers[q.id] || "لا يوجد إجابة";
-                html += `<div class="neu-flat overflow-hidden"><div onclick="this.nextElementSibling.classList.toggle('hidden')" class="p-4 cursor-pointer flex justify-between items-center"><div class="flex gap-2"><span class="font-bold text-blue-600">Q${i+1}</span><span class="font-bold text-gray-800">${cleanText(q.content)}</span></div><i data-lucide="chevron-down" class="w-5 h-5 text-gray-500"></i></div><div class="p-4 border-t border-gray-300 hidden bg-green-50"><span class="font-bold text-green-700">${cleanText(ans)}</span></div></div>`;
-            });
-            openModal("المرحلة " + chapNum, html + `</div>`);
-        }
-
-        // --- دالة السجل (سريعة جداً ومباشرة) ---
         function appendLog(msg, type) {
-            let terminal = document.getElementById('logTerminal');
-            if(!terminal) return;
+            let term = document.getElementById('logTerminal');
+            if(!term) return;
             let p = document.createElement('div');
             p.className = `log-${type}`;
             p.innerText = msg;
-            terminal.appendChild(p);
-            terminal.scrollTop = terminal.scrollHeight;
-        }
-
-        function updateCardInstant(chapId, score, total, isPerfect) {
-            let c = chaptersData.find(x => x.id === chapId);
-            if (!c) return;
-            c.score = score; c.badge = isPerfect ? 'PERFECT' : (score > 0 ? 'CLEAR' : 'RETRY');
-            let div = document.getElementById(`chap-${chapId}`);
-            if (!div) return;
-            div.innerHTML = getCardHTML(c);
-            initIcons();
+            term.appendChild(p);
+            term.scrollTop = term.scrollHeight;
         }
 
         async function startSolving(mode, singleId, singleNum) {
             if (isRunning) return;
             isRunning = true;
             AndroidBridge.startBackgroundService();
-            
             document.getElementById('logsContainer').classList.remove('hidden'); document.getElementById('logsContainer').classList.add('flex');
             document.getElementById('logTerminal').innerHTML = '';
 
             let targets = mode === 'single' ? [{ id: singleId, num: singleNum }] : chaptersData.filter(c => c.badge !== 'PERFECT');
-            if (targets.length === 0) { alert("كل المراحل مكتملة!"); isRunning = false; return; }
+            appendLog(`🚀 بدء الحل بأقصى سرعة...`, "header");
 
-            appendLog(`🚀 بدء الحل بأقصى سرعة (0ms)...`, "header");
-
-            try {
-                for (let t of targets) {
-                    if (!isRunning) break;
-                    appendLog(`\n--- المرحلة ${t.num} ---`, "header");
-                    await solveChapter(t.id, t.num);
-                    await sleep(0); // سرعة الصاروخ
-                }
-            } catch(e) {
-                appendLog("❌ خطأ: " + e.message, "error");
-            } finally {
-                isRunning = false;
-                AndroidBridge.stopBackgroundService();
+            for (let t of targets) {
+                if (!isRunning) break;
+                appendLog(`\n--- المرحلة ${t.num} ---`, "header");
+                await solveChapter(t.id, t.num);
+                AndroidBridge.sendNotification("تم حل المرحلة " + t.num, "AL SHAER X");
+                await sleep(0); // سرعة 0ms
             }
+            isRunning = false;
+            AndroidBridge.stopBackgroundService();
         }
 
         async function solveChapter(chapId, chapNum) {
-            if (!isRunning) return;
             let r = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId, null));
             if (!r || r.status !== 200) return;
-
             let data = safeParse(r.body) || {};
             let lectures = data.lectures || [];
             let testType = (data.chapter && data.chapter.test_type) || "test";
 
             for (let lec of lectures) {
-                if (!isRunning) return;
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id, null);
                 await sleep(0);
-                let lr = safeParse(AndroidBridge.request("GET", BASE + "/api/study/lectures/" + lec.id, null));
-                if (lr && lr.status === 200) {
-                    let lrData = safeParse(lr.body) || {};
-                    for (let t of (lrData.talks || [])) {
-                        if (t.type === 'try' && t.body && t.body.codes && t.body.codes[0] && t.body.codes[0].model_answer) {
-                            AndroidBridge.request("PUT", BASE + "/api/study/students/lecture-talks/" + t.id, JSON.stringify({value: {try: {lang: t.body.codes[0].lang || 'javascript', answer: t.body.codes[0].model_answer}}}));
-                            await sleep(0);
-                        }
-                    }
-                }
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id + "/complete", null);
                 await sleep(0);
             }
@@ -501,9 +361,8 @@
             let q = safeParse(AndroidBridge.request("GET", BASE + "/api/study/chapters/" + chapId + "/test", null));
             if (!q || q.status !== 200) return;
             let questions = [];
-            let qData = safeParse(q.body);
-            if (Array.isArray(qData)) {
-                for (let item of qData) { if (item.question && item.question.id) questions.push({ id: item.question.id, type: item.question.type, content: item.question.content }); }
+            if (Array.isArray(safeParse(q.body))) {
+                safeParse(q.body).forEach(item => { if (item.question && item.question.id) questions.push({ id: item.question.id, type: item.question.type, content: item.question.content }); });
             }
             if (questions.length === 0) return;
 
@@ -521,12 +380,11 @@
             await sleep(0);
 
             for (let item of questions) {
-                if (!isRunning) return;
                 if (item.type === "choice") AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: parseInt(item.id + "1")}));
                 else AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/description", JSON.stringify({answer_code: "let _x = 0;"}));
                 await sleep(0);
             }
-            await sleep(50); // تأخير بسيط جداً للسيرفر يجمع الإجابات
+            await sleep(50);
 
             let r1 = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/chapters/" + chapId + "/" + prefix + "/result", null));
             if (r1 && r1.status === 200) {
@@ -541,14 +399,10 @@
 
             let solved = 0;
             for (let item of questions) {
-                if (!isRunning) return;
-                let qText = cleanText(item.content);
                 if (answers[item.id]) {
                     let ans = answers[item.id];
                     let aText = item.type === "choice" ? cleanText(ans.text) : ans.answer_code;
-                    
-                    // طباعة السؤال والإجابة في السجل
-                    appendLog(`Q: ${qText}`, "q");
+                    appendLog(`Q: ${cleanText(item.content)}`, "q");
                     appendLog(`A: ${aText}`, "a");
 
                     if (item.type === "choice") { let r = safeParse(AndroidBridge.request("PUT", BASE + ep + "/" + item.id + "/answer/choice", JSON.stringify({choice_id: ans.choice_id}))); if (r && r.status === 200) solved++; }
@@ -564,12 +418,12 @@
             
             let isPerfect = (score >= total);
             appendLog(`النتيجة: ${score}/${total} ${isPerfect ? '🔥' : ''}`, isPerfect ? "success" : "error");
-            updateCardInstant(chapId, score, total, isPerfect);
+            
+            let card = document.getElementById(`chap-${chapId}`);
+            if (card) { card.className = `chapter-card rounded-2xl p-3 flex flex-col relative ${isPerfect ? 'border-emerald-500/50' : 'border-rose-500/50'}`; card.innerHTML = `<div class="text-center font-bold text-xs">${chapNum}</div><div class="text-center text-emerald-400 font-black mt-2">${score}/${total}</div>`; }
         }
-
-        window.onload = () => {
-            if (!navigator.onLine) { clearInterval(splashInterval); document.getElementById('splash').classList.add('hidden'); document.getElementById('offline-screen').style.display = 'flex'; }
-        };
+        
+        document.getElementById('closeLogsBtn').addEventListener('click', () => { document.getElementById('logsContainer').classList.add('hidden'); document.getElementById('logsContainer').classList.remove('flex'); });
     </script>
 </body>
 </html>
