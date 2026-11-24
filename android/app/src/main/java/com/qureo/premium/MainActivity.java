@@ -230,7 +230,7 @@ public class MainActivity extends Activity {
             } catch (Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 return "{\"status\":0,\"body\":" + JSONObject.quote("{\"error\":" + JSONObject.quote(msg) + "}") + "}";
-            } finally { if (conn != null) conn.disconnect(); }
+            } finally { // conn.disconnect(); تم تعطيله عشان تسريع الاتصال
         }
     }
 
