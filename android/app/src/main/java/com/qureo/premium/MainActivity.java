@@ -126,9 +126,9 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.startsWith("whatsapp://") || url.startsWith("https://wa.me") || url.startsWith("https://api.whatsapp.com")) {
+                if (url.startsWith("whatsapp://") || url.startsWith("https://wa.me") || url.startsWith("https://api.whatsapp.com") || url.startsWith("https://chat.whatsapp.com")) {
                     try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/201555085382"));
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         intent.setPackage("com.whatsapp");
                         startActivity(intent);
                         return true;
@@ -142,14 +142,15 @@ public class MainActivity extends Activity {
                 return false;
             }
 
-            // ⭐ دالة إنقاذ الـ WebView لما بيعمل كراش (الشاشة البنفسجي)
             @Override
             public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
                 if (view != null) {
-                    if (view.getParent() instanceof ViewGroup) { ((ViewGroup) view.getParent()).removeView(view); }
+                    if (view.getParent() instanceof ViewGroup) { 
+                        ((ViewGroup) view.getParent()).removeView(view); 
+                    }
                     view.destroy();
                 }
-                setupWebView(); // إعادة تشغيل الـ WebView من جديد
+                setupWebView();
                 return true;
             }
         });

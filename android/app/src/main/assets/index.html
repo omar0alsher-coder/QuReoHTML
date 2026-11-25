@@ -10,18 +10,19 @@
     <style>
         :root { --bg: #020617; --text: #fff; --card: #0f172a; --border: #1e293b; }
         .light-theme { --bg: #f8fafc; --text: #0f172a; --card: #ffffff; --border: #cbd5e1; }
-
         body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100dvh; width: 100vw; margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
         
         .neon-text { text-shadow: 0 0 5px #00f2fe, 0 0 10px #00f2fe; }
-        .neon-border { border: 1px solid #00f2fe; box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
-        
         .bg-card { background: var(--card); border-color: var(--border); }
         .text-main { color: var(--text); }
 
-        #splash { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
-        .progress-bar { width: 200px; height: 6px; background: var(--border); border-radius: 10px; overflow: hidden; margin-top: 15px; }
-        .progress-fill { height: 100%; width: 0%; background: #00f2fe; transition: width 0.3s; }
+        /* Splash Screen 2050 */
+        #splash { position: fixed; inset: 0; background: #020617; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; transition: opacity 0.5s; }
+        .splash-bg { position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,242,254,0.15) 0%, #020617 70%); z-index: 0; }
+        .splash-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 30px 30px; z-index: 0; transform: perspective(500px) rotateX(60deg) translateY(-100px); opacity: 0.5;}
+        
+        .progress-bar { width: 80%; max-width: 300px; height: 8px; background: #1e293b; border-radius: 10px; overflow: hidden; margin-top: 20px; border: 1px solid #334155; z-index: 10; position: relative;}
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe); box-shadow: 0 0 10px #00f2fe; transition: width 0.2s linear; }
         
         .chapter-card { background: var(--card); border: 1px solid var(--border); transition: all 0.2s; cursor: pointer; border-radius: 12px; }
         .chapter-card:active { transform: scale(0.95); border-color: #00f2fe; }
@@ -40,20 +41,37 @@
 </head>
 <body class="full-screen">
 
+    <!-- Splash Screen -->
     <div id="splash">
-        <i data-lucide="graduation-cap" class="w-24 h-24 text-cyan-400 mb-6"></i>
-        <h1 class="text-4xl font-black text-main mb-2 neon-text">AL SHAER <span class="text-cyan-400">X</span></h1>
-        <p class="font-bold opacity-70 mb-8">مرحبا بك في تطبيق أحمد الشاعر</p>
-        <div class="progress-bar"><div class="progress-fill" id="splash-progress"></div></div>
-        <p class="mt-3 font-bold text-cyan-400 text-lg" id="splash-percent">0%</p>
-        <a href="https://wa.me/201555085382" class="mt-12 flex items-center gap-2 bg-[#25D366]/20 text-[#25D366] px-6 py-3 rounded-full font-bold text-sm border border-[#25D366]/30">
-            <i data-lucide="phone" class="w-5 h-5"></i> تواصل معنا (واتساب)
-        </a>
+        <div class="splash-bg"></div>
+        <div class="splash-grid"></div>
+        
+        <div class="relative z-10 flex flex-col items-center">
+            <div class="w-32 h-32 mb-6 relative">
+                <div class="absolute inset-0 bg-cyan-500 rounded-full blur-[50px] opacity-30 animate-pulse"></div>
+                <i data-lucide="graduation-cap" class="w-full h-full text-cyan-400 drop-shadow-[0_0_15px_rgba(0,242,254,0.8)] relative z-10"></i>
+            </div>
+            
+            <h1 class="text-5xl font-black text-white mb-2 neon-text tracking-wider">AL SHAER <span class="text-cyan-400">X</span></h1>
+            <p class="text-slate-400 font-bold mb-10 text-lg">مرحبا بك في تطبيق أحمد الشاعر</p>
+            
+            <div class="progress-bar"><div class="progress-fill" id="splash-progress"></div></div>
+            <p class="mt-4 font-black text-cyan-400 text-xl" id="splash-percent">0%</p>
+        </div>
+        
+        <div class="absolute bottom-10 left-0 w-full px-6 flex flex-col gap-3 z-10">
+            <a href="https://chat.whatsapp.com/DrLD3MFAEUu91T7KcRKr5h?s=cl&p=a&iam=2" class="w-full py-4 bg-[#25D366]/10 border border-[#25D366]/50 text-[#25D366] rounded-2xl font-black text-lg flex items-center justify-center gap-3 active:scale-95 transition-transform backdrop-blur-md">
+                <i data-lucide="users" class="w-6 h-6"></i> جروب الواتساب (دعم)
+            </a>
+            <a href="https://wa.me/201500972046" class="w-full py-4 bg-cyan-500/10 border border-cyan-500/50 text-cyan-400 rounded-2xl font-black text-lg flex items-center justify-center gap-3 active:scale-95 transition-transform backdrop-blur-md">
+                <i data-lucide="phone" class="w-6 h-6"></i> تواصل مع المطور
+            </a>
+        </div>
     </div>
 
-    <div id="offline-screen" class="fixed inset-0 bg-[var(--bg)] z-[99999] hidden flex-col items-center justify-center">
+    <div id="offline-screen" class="fixed inset-0 bg-[#020617] z-[99999] hidden flex-col items-center justify-center">
         <i data-lucide="wifi-off" class="w-24 h-24 text-red-500 mb-6"></i>
-        <h2 class="text-3xl font-black text-main mb-2">لا يوجد اتصال بالإنترنت</h2>
+        <h2 class="text-3xl font-black text-white mb-2">لا يوجد اتصال بالإنترنت</h2>
         <button onclick="location.reload()" class="mt-6 px-8 py-3 bg-cyan-600 text-white font-bold rounded-xl">إعادة المحاولة</button>
     </div>
 
@@ -106,17 +124,27 @@
         // Splash Screen
         let splashProgress = 0;
         let splashInt = setInterval(() => {
-            if (!navigator.onLine) { clearInterval(splashInt); document.getElementById('splash').classList.add('hidden'); document.getElementById('offline-screen').style.display = 'flex'; return; }
-            splashProgress += Math.random() * 20;
-            if (splashProgress > 100) splashProgress = 100;
+            if (!navigator.onLine) { 
+                clearInterval(splashInt); 
+                document.getElementById('splash').style.display = 'none'; 
+                document.getElementById('offline-screen').style.display = 'flex'; 
+                return; 
+            }
+            splashProgress += Math.random() * 15;
+            if (splashProgress >= 100) splashProgress = 100;
+            
             document.getElementById('splash-progress').style.width = splashProgress + '%';
             document.getElementById('splash-percent').innerText = Math.floor(splashProgress) + '%';
-            if (splashProgress === 100) {
+            
+            if (splashProgress >= 100) {
                 clearInterval(splashInt);
                 setTimeout(() => { 
-                    document.getElementById('splash').classList.add('hidden'); 
-                    document.getElementById('app').classList.remove('hidden');
-                    startApp(); 
+                    document.getElementById('splash').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('splash').style.display = 'none'; 
+                        document.getElementById('app').classList.remove('hidden');
+                        startApp(); 
+                    }, 400);
                 }, 300);
             }
         }, 80);
@@ -149,7 +177,7 @@
                                 <span id="loginTxt">دخول للمنصة</span>
                             </button>
                             
-                            <a href="https://wa.me/201555085382" class="w-full flex justify-center items-center gap-2 text-[#25D366] font-bold mt-4 text-sm opacity-80 hover:opacity-100">
+                            <a href="https://wa.me/201500972046" class="w-full flex justify-center items-center gap-2 text-[#25D366] font-bold mt-4 text-sm opacity-80 hover:opacity-100">
                                 <i data-lucide="phone" class="w-4 h-4"></i> تواصل مع الدعم
                             </a>
                         </div>
@@ -167,7 +195,6 @@
                 const btn = document.getElementById('loginBtn'), txt = document.getElementById('loginTxt'), spin = document.getElementById('loginSpin');
                 btn.disabled = true; txt.innerText = "جاري الدخول..."; spin.style.display = "block";
 
-                // تأخير بسيط جداً عشان الواجهة تلحق ترسم زرار اللودينج
                 setTimeout(() => {
                     AndroidBridge.clearCookies();
                     let res = safeParse(AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd})));
@@ -190,9 +217,8 @@
                     localStorage.setItem('accounts', JSON.stringify(accounts));
                     localStorage.setItem('current_idx', currentAccountIndex);
 
-                    // تسجيل في فايربيز
                     fetch(`${FIREBASE_URL}/users.json`, { method: 'POST', body: JSON.stringify({id: sid, time: Date.now()}) });
-                    if(cName !== "") fetch(`${FIREBASE_URL}/solved_students/${sid}.json`, { method: 'PUT', body: 'true' }); // مجرد حساب مسجل
+                    if(cName !== "") fetch(`${FIREBASE_URL}/solved_students/${sid}.json`, { method: 'PUT', body: 'true' });
 
                     fetchDataAndRender();
                 }, 100);
@@ -325,7 +351,7 @@
                         </button>
                     </div>
 
-                    <a href="https://wa.me/201555085382" class="w-full py-3 bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 rounded-xl font-bold flex justify-center items-center gap-2">
+                    <a href="https://wa.me/201500972046" class="w-full py-3 bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 rounded-xl font-bold flex justify-center items-center gap-2">
                         <i data-lucide="phone" class="w-5 h-5"></i> تواصل مع المطور
                     </a>
 
