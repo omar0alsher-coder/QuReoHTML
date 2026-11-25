@@ -145,7 +145,7 @@ public class MainActivity extends Activity {
             @Override
             public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
                 if (view != null) {
-                    (view.getParent() instanceof ViewGroup) ? ((ViewGroup) view.getParent()).removeView(view) : null;
+                    if (view.getParent() instanceof ViewGroup) { ((ViewGroup) view.getParent()).removeView(view); }
                     view.destroy();
                 }
                 setupWebView(); // إعادة تشغيل الـ WebView من جديد
