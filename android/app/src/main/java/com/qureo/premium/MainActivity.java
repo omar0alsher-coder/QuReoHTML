@@ -111,7 +111,6 @@ public class MainActivity extends Activity {
         s.setAllowUniversalAccessFromFileURLs(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         s.setMediaPlaybackRequiresUserGesture(false);
-        s.setRenderPriority(WebSettings.RenderPriority.HIGH);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
@@ -119,7 +118,6 @@ public class MainActivity extends Activity {
 
         webView.addJavascriptInterface(new Bridge(), "AndroidBridge");
         
-        // ⭐ هنا حل مشكلة الواتساب واللينكات الخارجية
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -142,7 +140,6 @@ public class MainActivity extends Activity {
         });
         
         webView.setWebChromeClient(new WebChromeClient()); 
-
         webView.loadUrl("file:///android_asset/index.html");
     }
 

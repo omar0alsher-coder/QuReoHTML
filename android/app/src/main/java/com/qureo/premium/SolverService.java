@@ -38,7 +38,7 @@ public class SolverService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Mohamed")
+                .setContentTitle("AL SHAER X")
                 .setContentText("جاري الحل في الخلفية...")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -50,11 +50,7 @@ public class SolverService extends Service {
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Qureo Solver Service",
-                    NotificationManager.IMPORTANCE_LOW
-            );
+            NotificationChannel serviceChannel = new NotificationChannel(CHANNEL_ID, "Solver Service", NotificationManager.IMPORTANCE_LOW);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(serviceChannel);
         }
