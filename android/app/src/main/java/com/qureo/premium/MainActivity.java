@@ -99,6 +99,10 @@ public class MainActivity extends Activity {
             javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier((h, s) -> true);
         } catch (Exception ignored) {}
 
+        setupWebView();
+    }
+
+    private void setupWebView() {
         webView = new WebView(this);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         webView.setBackgroundColor(android.graphics.Color.parseColor("#020617"));
@@ -121,11 +125,10 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.startsWith("whatsapp://") || url.startsWith("https://wa.me") || url.startsWith("intent://")) {
+                if (url.startsWith("whatsapp://") || url.startsWith("https://wa.me") || url.startsWith("https://api.whatsapp.com")) {
                     try {
-                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
-                        intent.addCategory(Intent.CATEGORY_BROWSABLE);
-                        intent.setComponent(null);
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/201555085382"));
+                        intent.setPackage("com.whatsapp");
                         startActivity(intent);
                         return true;
                     } catch (Exception e) {
@@ -136,6 +139,17 @@ public class MainActivity extends Activity {
                     }
                 }
                 return false;
+            }
+
+            // ⭐ دالة إنقاذ الـ WebView لما بيعمل كراش (الشاشة البنفسجي)
+            @Override
+            public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
+                if (view != null) {
+                    (view.getParent() instanceof ViewGroup) ? ((ViewGroup) view.getParent()).removeView(view) : null;
+                    view.destroy();
+                }
+                setupWebView(); // إعادة تشغيل الـ WebView من جديد
+                return true;
             }
         });
         
