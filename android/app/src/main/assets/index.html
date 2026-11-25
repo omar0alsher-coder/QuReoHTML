@@ -160,29 +160,58 @@
 
         function renderLogin(errorMsg = '') {
             document.getElementById('app').innerHTML = `
-                <div class="h-full w-full flex items-center justify-center p-4">
-                    <div class="bg-card w-full max-w-sm p-8 rounded-3xl border border-[var(--border)] relative">
-                        <div class="text-center mb-8">
-                            <h1 class="text-3xl font-black text-main mb-1">AL SHAER <span class="text-cyan-400">X</span></h1>
-                            <p class="text-sm font-bold opacity-70">تسجيل الدخول للمنصة</p>
-                        </div>
-                        ${errorMsg ? `<div class="bg-red-500/10 text-red-500 p-3 rounded-xl mb-4 text-sm font-bold text-center border border-red-500/30">${errorMsg}</div>` : ''}
-                        <div class="space-y-4">
-                            <div><label class="block text-sm font-bold opacity-80 mb-1">اسم الطالب (اختياري)</label><input type="text" id="cName" class="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-main focus:outline-none focus:border-cyan-500"></div>
-                            <div><label class="block text-sm font-bold opacity-80 mb-1">رقم الطالب (ID)</label><input type="text" id="sid" class="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-main focus:outline-none focus:border-cyan-500" placeholder="481006599"></div>
-                            <div><label class="block text-sm font-bold opacity-80 mb-1">كلمة المرور</label><input type="password" id="pwd" class="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-main focus:outline-none focus:border-cyan-500" placeholder="********"></div>
-                            
-                            <button id="loginBtn" class="w-full bg-cyan-600 py-4 rounded-xl font-black text-lg flex justify-center items-center gap-2 mt-6 shadow-lg shadow-cyan-500/30 transition-transform active:scale-95">
-                                <div class="spinner" id="loginSpin"></div>
-                                <span id="loginTxt">دخول للمنصة</span>
-                            </button>
-                            
-                            <a href="https://wa.me/201500972046" class="w-full flex justify-center items-center gap-2 text-[#25D366] font-bold mt-4 text-sm opacity-80 hover:opacity-100">
-                                <i data-lucide="phone" class="w-4 h-4"></i> تواصل مع الدعم
-                            </a>
-                        </div>
-                    </div>
-                </div>
+<div class="h-full w-full flex flex-col justify-center px-6 relative overflow-hidden">
+    <!-- خلفية متوهجة -->
+    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-cyan-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
+
+    <div class="relative z-10 w-full max-w-md mx-auto">
+        <!-- اللوجو والترحيب -->
+        <div class="text-center mb-10">
+            <div class="w-20 h-20 mx-auto bg-cyan-500/10 rounded-3xl flex items-center justify-center mb-4 border border-cyan-500/20">
+                <i data-lucide="graduation-cap" class="w-10 h-10 text-cyan-400 drop-shadow-[0_0_15px_rgba(0,242,254,0.8)]"></i>
+            </div>
+            <h1 class="text-4xl font-black text-white tracking-widest mb-2">AL SHAER <span class="text-cyan-400">X</span></h1>
+            <p class="text-slate-400 font-bold text-sm">مرحبا بك، يرجى تسجيل الدخول</p>
+        </div>
+
+        ${errorMsg ? `<div class="bg-red-500/10 text-red-500 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/30">${errorMsg}</div>` : ""}
+
+        <div class="space-y-5">
+            <!-- اسم الطالب -->
+            <div class="relative">
+                <i data-lucide="smile" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i>
+                <input type="text" id="cName" class="w-full bg-[#0f172a] border border-slate-700 rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="اسم الطالب (اختياري)">
+            </div>
+            
+            <!-- رقم الطالب -->
+            <div class="relative">
+                <i data-lucide="user" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i>
+                <input type="text" id="sid" class="w-full bg-[#0f172a] border border-slate-700 rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="رقم الطالب (ID)">
+            </div>
+            
+            <!-- كلمة المرور -->
+            <div class="relative">
+                <i data-lucide="key" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i>
+                <input type="password" id="pwd" class="w-full bg-[#0f172a] border border-slate-700 rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="كلمة المرور">
+            </div>
+
+            <!-- زرار الدخول -->
+            <button id="loginBtn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 py-4 rounded-2xl font-black text-lg text-white shadow-[0_0_20px_rgba(0,242,254,0.3)] transition-transform active:scale-95 flex justify-center items-center gap-3 mt-6">
+                <div class="spinner" id="loginSpin"></div>
+                <span id="loginTxt">دخول للمنصة</span>
+                <i data-lucide="log-in" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- الدعم -->
+        <div class="mt-12 text-center">
+            <a href="https://wa.me/201500972046" class="inline-flex items-center gap-2 text-[#25D366] font-bold text-sm opacity-80 hover:opacity-100 transition-opacity">
+                <i data-lucide="phone" class="w-5 h-5"></i> تواصل مع الدعم (واتساب)
+            </a>
+        </div>
+    </div>
+</div>
             `;
             initIcons();
             
