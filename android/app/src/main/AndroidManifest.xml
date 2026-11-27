@@ -16,6 +16,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
         
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4776915813805093~5028842571"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

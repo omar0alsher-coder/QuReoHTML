@@ -10,10 +10,8 @@
     <style>
         :root { --bg: #050914; --text: #fff; --card: #0f172a; --border: #1e293b; }
         .light-theme { --bg: #f1f5f9; --text: #0f172a; --card: #ffffff; --border: #cbd5e1; }
-        
         body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100dvh; width: 100vw; margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
         
-        /* تأثيرات نيون */
         .neon-text { text-shadow: 0 0 5px #00f2fe, 0 0 10px #00f2fe, 0 0 20px #00f2fe; }
         .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); }
         body.light-theme .glass { background: rgba(255, 255, 255, 0.8); border-color: rgba(0,0,0,0.1); }
@@ -21,13 +19,11 @@
         .bg-card { background: var(--card); border-color: var(--border); }
         .text-main { color: var(--text); }
 
-        /* شاشة البداية */
         #splash { position: fixed; inset: 0; background: #050914; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
         .splash-bg { position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,242,254,0.15) 0%, #050914 70%); z-index: 0; }
         .progress-bar { width: 80%; max-width: 300px; height: 8px; background: #1e293b; border-radius: 10px; overflow: hidden; margin-top: 20px; border: 1px solid #334155; z-index: 10; position: relative;}
         .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe); box-shadow: 0 0 10px #00f2fe; transition: width 0.2s linear; }
         
-        /* كروت المراحل */
         .chapter-card { background: var(--card); border: 1px solid var(--border); transition: all 0.2s; cursor: pointer; border-radius: 16px; position: relative; overflow: hidden; }
         .chapter-card:active { transform: scale(0.95); border-color: #00f2fe; }
         .badge-perfect { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -48,7 +44,6 @@
 </head>
 <body class="full-screen">
 
-    <!-- Splash Screen -->
     <div id="splash">
         <div class="splash-bg"></div>
         <div class="relative z-10 flex flex-col items-center">
@@ -71,7 +66,6 @@
 
     <div id="app" class="h-full w-full overflow-y-auto hidden"></div>
     
-    <!-- السجل -->
     <div id="logsContainer" class="fixed bottom-0 left-0 right-0 h-[70vh] glass z-50 flex-col hidden rounded-t-3xl shadow-[0_-10px_30px_rgba(0,242,254,0.1)]">
         <div class="flex justify-between items-center px-4 py-3 bg-[var(--card)] rounded-t-3xl border-b border-[var(--border)]">
             <div class="flex items-center gap-2 text-sm font-bold text-cyan-400"><i data-lucide="terminal" class="w-5 h-5"></i> السجل المباشر</div>
@@ -80,7 +74,6 @@
         <div id="logTerminal" class="flex-1 p-4 overflow-y-auto"></div>
     </div>
 
-    <!-- المودال -->
     <div id="modalContainer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
         <div class="glass w-full max-w-md h-[85vh] rounded-3xl flex flex-col overflow-hidden">
             <div class="flex justify-between items-center p-4 border-b border-white/10">
@@ -101,6 +94,8 @@
         let accounts = JSON.parse(localStorage.getItem('accounts')) || [];
         let currentAccountIndex = parseInt(localStorage.getItem('current_idx') || -1);
         let chaptersData = [], isRunning = false;
+        let solvedCount = 0;
+        let stagesToSolve = 5; // العدد المطلوب لحله قبل الإعلان
 
         function initIcons() { if(typeof lucide !== 'undefined') lucide.createIcons(); }
         function safeParse(s) { try { return JSON.parse(s); } catch(e) { return null; } }
@@ -117,21 +112,14 @@
         }
         applyTheme();
 
-        // Splash Screen
+        // Splash
         let splashProgress = 0;
         let splashInt = setInterval(() => {
-            if (!navigator.onLine) { 
-                clearInterval(splashInt); 
-                document.getElementById('splash').style.display = 'none'; 
-                document.getElementById('offline-screen').style.display = 'flex'; 
-                return; 
-            }
+            if (!navigator.onLine) { clearInterval(splashInt); document.getElementById('splash').style.display = 'none'; document.getElementById('offline-screen').style.display = 'flex'; return; }
             splashProgress += Math.random() * 20;
             if (splashProgress >= 100) splashProgress = 100;
-            
             document.getElementById('splash-progress').style.width = splashProgress + '%';
             document.getElementById('splash-percent').innerText = Math.floor(splashProgress) + '%';
-            
             if (splashProgress >= 100) {
                 clearInterval(splashInt);
                 setTimeout(() => { 
@@ -148,6 +136,22 @@
         window.addEventListener('offline', () => { document.getElementById('offline-screen').style.display = 'flex'; });
         window.addEventListener('online', () => { document.getElementById('offline-screen').style.display = 'none'; });
 
+        // دوال الإعلانات
+        function showRewardedAdAndThenStart(mode, id, num) {
+            if (AndroidBridge && AndroidBridge.showRewardedAd) {
+                window.onRewardEarned = () => {
+                    // بعد ما المستخدم يشوف الإعلان، نبدأ الحل
+                    startSolving(mode, id, num);
+                    // إعادة تعيين العداد عشان الإعلان الجاي
+                    solvedCount = 0;
+                };
+                AndroidBridge.showRewardedAd();
+            } else {
+                // لو مفيش جافا (مثلاً في المتصفح)، ابدأ عادي
+                startSolving(mode, id, num);
+            }
+        }
+
         function startApp() {
             if (accounts.length > 0 && currentAccountIndex >= 0) {
                 fetchDataAndRender(accounts[currentAccountIndex]);
@@ -157,10 +161,8 @@
         function renderLogin(errorMsg = '') {
             document.getElementById('app').innerHTML = `
                 <div class="min-h-full w-full flex flex-col justify-center px-6 relative overflow-hidden">
-                    <!-- خلفية متوهجة -->
                     <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-cyan-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
                     <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-
                     <div class="relative z-10 w-full max-w-md mx-auto">
                         <div class="text-center mb-10">
                             <div class="w-20 h-20 mx-auto bg-cyan-500/10 rounded-3xl flex items-center justify-center mb-4 border border-cyan-500/20">
@@ -169,34 +171,16 @@
                             <h1 class="text-4xl font-black text-white tracking-widest mb-2">AL SHAER <span class="text-cyan-400">X</span></h1>
                             <p class="text-slate-400 font-bold text-sm">مرحبا بك، يرجى تسجيل الدخول</p>
                         </div>
-
                         ${errorMsg ? `<div class="bg-red-500/10 text-red-500 p-3 rounded-xl mb-6 text-sm font-bold text-center border border-red-500/30">${errorMsg}</div>` : ""}
-
                         <div class="space-y-5">
-                            <div class="relative">
-                                <i data-lucide="smile" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i>
-                                <input type="text" id="cName" class="w-full glass rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="اسم الطالب (اختياري)">
-                            </div>
-                            <div class="relative">
-                                <i data-lucide="user" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i>
-                                <input type="text" id="sid" class="w-full glass rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="رقم الطالب (ID)">
-                            </div>
-                            <div class="relative">
-                                <i data-lucide="key" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i>
-                                <input type="password" id="pwd" class="w-full glass rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="كلمة المرور">
-                            </div>
+                            <div class="relative"><i data-lucide="smile" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i><input type="text" id="cName" class="w-full glass rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="اسم الطالب (اختياري)"></div>
+                            <div class="relative"><i data-lucide="user" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i><input type="text" id="sid" class="w-full glass rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="رقم الطالب (ID)"></div>
+                            <div class="relative"><i data-lucide="key" class="absolute right-4 top-4 w-5 h-5 text-slate-400"></i><input type="password" id="pwd" class="w-full glass rounded-2xl py-4 pr-12 pl-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-500" placeholder="كلمة المرور"></div>
                             <button id="loginBtn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 py-4 rounded-2xl font-black text-lg text-white shadow-[0_0_20px_rgba(0,242,254,0.3)] transition-transform active:scale-95 flex justify-center items-center gap-3 mt-6">
-                                <div class="spinner" id="loginSpin"></div>
-                                <span id="loginTxt">دخول للمنصة</span>
-                                <i data-lucide="log-in" class="w-6 h-6"></i>
+                                <div class="spinner" id="loginSpin"></div><span id="loginTxt">دخول للمنصة</span><i data-lucide="log-in" class="w-6 h-6"></i>
                             </button>
                         </div>
-
-                        <div class="mt-12 text-center">
-                            <a href="https://wa.me/201500972046" class="inline-flex items-center gap-2 text-[#25D366] font-bold text-sm opacity-80 hover:opacity-100 transition-opacity">
-                                <i data-lucide="phone" class="w-5 h-5"></i> تواصل مع الدعم (واتساب)
-                            </a>
-                        </div>
+                        <div class="mt-12 text-center"><a href="https://wa.me/201500972046" class="inline-flex items-center gap-2 text-[#25D366] font-bold text-sm opacity-80 hover:opacity-100"><i data-lucide="phone" class="w-5 h-5"></i> تواصل مع الدعم (واتساب)</a></div>
                     </div>
                 </div>
             `;
@@ -216,14 +200,20 @@
                     let res = safeParse(AndroidBridge.request("POST", PORTAL + "/oauth2/password-login", JSON.stringify({student_id: sid, password: pwd})));
                     
                     if (!res || (res.status !== 200 && res.status !== 302)) {
-                        renderLogin("بيانات غير صحيحة أو السيرفر مشغول"); return;
+                        if (res && res.status === 403) renderLogin("خطأ 403: يرجى إيقاف الـ VPN (المنصة ترفض الاتصال من خارج مصر)");
+                        else renderLogin("بيانات غير صحيحة أو السيرفر مشغول");
+                        return;
                     }
 
                     AndroidBridge.setCookie("student_selected_content_id", "javascript_ar");
                     AndroidBridge.saveSession();
 
                     let verify = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/me", null));
-                    if (!verify || verify.status !== 200) { renderLogin("فشل التحقق من البيانات"); return; }
+                    if (!verify || verify.status !== 200) { 
+                        if (verify && verify.status === 403) renderLogin("خطأ 403: يرجى إيقاف الـ VPN (المنصة ترفض الاتصال من خارج مصر)"); 
+                        else renderLogin("فشل التحقق من البيانات (تأكد من اتصالك بالإنترنت)"); 
+                        return; 
+                    }
 
                     let cookies = AndroidBridge.getSavedCookies();
                     let accData = { id: sid, password: pwd, name: cName || "طالب " + sid, cookies: cookies, solved: 0 };
@@ -235,6 +225,9 @@
 
                     fetch(`${FIREBASE_URL}/users.json`, { method: 'POST', body: JSON.stringify({id: sid, time: Date.now()}) }).catch(()=>{});
                     if(cName !== "") fetch(`${FIREBASE_URL}/solved_students/${sid}.json`, { method: 'PUT', body: 'true' }).catch(()=>{});
+
+                    // عرض إعلان بيني بعد تسجيل الدخول
+                    if (AndroidBridge && AndroidBridge.showInterstitialAd) AndroidBridge.showInterstitialAd();
 
                     await fetchDataAndRender(accData);
                 }, 100);
@@ -259,19 +252,26 @@
             if (chaps && chaps.status === 200) { let chObj = safeParse(chaps.body); if (chObj.chapters) chObj.chapters.forEach(ch => qMap[ch.id] = ch.question_count || 5); }
 
             chaptersData = []; let perfectCount = 0;
-            for (let i = 1; i <= 42; i++) {
-                let chapId = 90000 + i;
+            let chObj = safeParse(chaps.body) || {};
+            let chapterList = chObj.chapters || [];
+            
+            if (chapterList.length === 0) {
+                for (let i = 1; i <= 42; i++) chapterList.push({ id: 90000 + i });
+            }
+
+            chapterList.forEach((ch, index) => {
+                let chapId = ch.id;
                 let info = progressMap[chapId] || {};
                 let score = info.best_correct_count || 0;
-                let qCount = qMap[chapId] || 5;
+                let qCount = ch.question_count || qMap[chapId] || 5;
                 let badge = "RETRY";
                 if (score === qCount && qCount > 0) { badge = "PERFECT"; perfectCount++; }
                 else if (score > 0) badge = "CLEAR";
-                chaptersData.push({ id: chapId, num: i, score: score, total_q: qCount, badge: badge });
-            }
+                chaptersData.push({ id: chapId, num: index + 1, score: score, total_q: qCount, badge: badge });
+            });
 
             if (acc) { acc.solved = perfectCount; localStorage.setItem('accounts', JSON.stringify(accounts)); }
-            if (perfectCount === 42) fetch(`${FIREBASE_URL}/completed_students/${acc.id}.json`, { method: 'PUT', body: 'true' }).catch(()=>{});
+            if (perfectCount === chaptersData.length) fetch(`${FIREBASE_URL}/completed_students/${acc.id}.json`, { method: 'PUT', body: 'true' }).catch(()=>{});
 
             document.getElementById('app').innerHTML = `
                 <div class="min-h-full pb-24 relative">
@@ -293,9 +293,10 @@
 
                     <div class="p-4">
                         <div class="grid grid-cols-2 gap-4 mb-6">
-                            <button onclick="startSolving('all')" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 font-black active:scale-95 transition-transform shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                            <button onclick="showRewardedAdAndThenStart('all')" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 font-black active:scale-95 transition-transform shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                                 <i data-lucide="check-circle" class="w-8 h-8"></i>
                                 <span class="text-lg">حل الكل</span>
+                                <span class="text-[10px] opacity-70">شاهد إعلان للبدء</span>
                             </button>
                             <button onclick="openReview()" class="bg-purple-500/20 text-purple-400 border border-purple-500/30 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 font-black active:scale-95 transition-transform shadow-[0_0_15px_rgba(168,85,247,0.2)]">
                                 <i data-lucide="book-open" class="w-8 h-8"></i>
@@ -303,7 +304,6 @@
                             </button>
                         </div>
 
-                        <!-- صفين بس عشان يكبروا -->
                         <div class="grid grid-cols-2 gap-4" id="chaptersGrid"></div>
                     </div>
 
@@ -322,7 +322,7 @@
                 div.id = `chap-${c.id}`;
                 div.className = `chapter-card p-4 flex flex-col items-center justify-center relative`;
                 div.innerHTML = getCardContent(c);
-                div.onclick = () => { if (!isRunning) startSolving('single', c.id, c.num); };
+                div.onclick = () => { if (!isRunning) showRewardedAdAndThenStart('single', c.id, c.num); };
                 grid.appendChild(div);
             });
             initIcons();
@@ -359,26 +359,14 @@
                         <h3 class="text-sm font-bold text-cyan-400 border-b border-white/10 pb-2 mb-2">إحصائيات المنصة (Firebase)</h3>
                         <div class="flex justify-between items-center"><span class="text-sm opacity-80">إجمالي المستخدمين</span><span class="font-black text-cyan-400" id="fb-users">...</span></div>
                         <div class="flex justify-between items-center"><span class="text-sm opacity-80">إجمالي المراحل المحلولة</span><span class="font-black text-emerald-400" id="fb-solved">...</span></div>
-                        <div class="flex justify-between items-center"><span class="text-sm opacity-80">طلاب أنهوا 42 مرحلة</span><span class="font-black text-purple-400" id="fb-completed">...</span></div>
+                        <div class="flex justify-between items-center"><span class="text-sm opacity-80">طلاب أنهوا المراحل</span><span class="font-black text-purple-400" id="fb-completed">...</span></div>
                     </div>
-                    
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="toggleTheme()" class="p-3 glass border border-white/10 rounded-xl flex items-center justify-center gap-2 font-bold text-sm">
-                            <i data-lucide="sun-moon" class="w-4 h-4"></i> ${theme === 'dark' ? 'نهاري' : 'ليلي'}
-                        </button>
-                        <button onclick="toggleLang()" class="p-3 glass border border-white/10 rounded-xl flex items-center justify-center gap-2 font-bold text-sm">
-                            <i data-lucide="languages" class="w-4 h-4"></i> ${lang === 'ar' ? 'English' : 'عربي'}
-                        </button>
+                        <button onclick="toggleTheme()" class="p-3 glass border border-white/10 rounded-xl flex items-center justify-center gap-2 font-bold text-sm"><i data-lucide="sun-moon" class="w-4 h-4"></i> ${theme === 'dark' ? 'نهاري' : 'ليلي'}</button>
+                        <button onclick="toggleLang()" class="p-3 glass border border-white/10 rounded-xl flex items-center justify-center gap-2 font-bold text-sm"><i data-lucide="languages" class="w-4 h-4"></i> ${lang === 'ar' ? 'English' : 'عربي'}</button>
                     </div>
-
-                    <a href="https://chat.whatsapp.com/DrLD3MFAEUu91T7KcRKr5h?s=cl&p=a&iam=2" class="w-full py-3 bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 rounded-xl font-bold flex justify-center items-center gap-2">
-                        <i data-lucide="users" class="w-5 h-5"></i> انضم لجروب الواتساب
-                    </a>
-
-                    <a href="https://wa.me/201500972046" class="w-full py-3 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl font-bold flex justify-center items-center gap-2">
-                        <i data-lucide="phone" class="w-5 h-5"></i> تواصل مع المطور
-                    </a>
-
+                    <a href="https://chat.whatsapp.com/DrLD3MFAEUu91T7KcRKr5h?s=cl&p=a&iam=2" class="w-full py-3 bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 rounded-xl font-bold flex justify-center items-center gap-2"><i data-lucide="users" class="w-5 h-5"></i> انضم لجروب الواتساب</a>
+                    <a href="https://wa.me/201500972046" class="w-full py-3 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl font-bold flex justify-center items-center gap-2"><i data-lucide="phone" class="w-5 h-5"></i> تواصل مع المطور</a>
                     <button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-500 border border-red-500/30 rounded-xl font-bold">تسجيل خروج</button>
                 </div>
             `;
@@ -391,16 +379,12 @@
             try {
                 let u = await fetch(`${FIREBASE_URL}/users.json?shallow=true`); let uD = await u.json();
                 document.getElementById('fb-users').innerText = uD ? Object.keys(uD).length : 0;
-                
                 let s = await fetch(`${FIREBASE_URL}/solved_stages.json?shallow=true`); let sD = await s.json();
                 document.getElementById('fb-solved').innerText = sD ? Object.keys(sD).length : 0;
-
                 let c = await fetch(`${FIREBASE_URL}/completed_students.json?shallow=true`); let cD = await c.json();
                 document.getElementById('fb-completed').innerText = cD ? Object.keys(cD).length : 0;
             } catch(e) {
-                document.getElementById('fb-users').innerText = "غير متاح";
-                document.getElementById('fb-solved').innerText = "غير متاح";
-                document.getElementById('fb-completed').innerText = "غير متاح";
+                document.getElementById('fb-users').innerText = "غير متاح"; document.getElementById('fb-solved').innerText = "غير متاح"; document.getElementById('fb-completed').innerText = "غير متاح";
             }
         }
 
@@ -425,6 +409,8 @@
             AndroidBridge.startBackgroundService();
             document.getElementById('logsContainer').classList.remove('hidden'); document.getElementById('logsContainer').classList.add('flex');
             document.getElementById('logTerminal').innerHTML = '';
+            
+            solvedCount = 0; // تصفير عداد الإعلانات
 
             let targets = mode === 'single' ? [{ id: sId, num: sNum }] : chaptersData.filter(c => c.badge !== 'PERFECT');
             
@@ -433,6 +419,19 @@
                 await solveChapter(t.id, t.num);
                 AndroidBridge.sendNotification("تم حل المرحلة " + t.num, "AL SHAER X");
                 await sleep(50); 
+                
+                solvedCount++;
+                // كل 5 مراحل، عرض إعلان مكافأة
+                if (solvedCount > 0 && solvedCount % 5 === 0) {
+                    appendLog(`--- تهانينا! لقد حللت 5 مراحل. شاهد إعلاناً للمتابعة ---`, 'success');
+                    window.onRewardEarned = () => {
+                        // نكمل الحل بعد الإعلان
+                        appendLog(`--- شكراً لك! جاري المتابعة... ---`, 'info');
+                    };
+                    AndroidBridge.showRewardedAd();
+                    // انتظار بسيط عشان الإعلان يظهر
+                    await sleep(2000);
+                }
             }
             isRunning = false;
             AndroidBridge.stopBackgroundService();
@@ -452,7 +451,6 @@
                 AndroidBridge.request("PUT", BASE + "/api/study/students/lectures/" + lec.id + "/complete", null);
                 await sleep(30);
                 
-                // تحديث الجواهر بعد كل درس
                 let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
                 if (d && d.status === 200) { let el = document.getElementById('diamondCount'); if(el) el.innerText = safeParse(d.body); }
             }
@@ -523,7 +521,6 @@
             
             if(isPerfect) fetch(`${FIREBASE_URL}/solved_stages/${chapId}.json`, { method: 'PUT', body: 'true' }).catch(()=>{});
 
-            // تحديث كارت المرحلة فوراً
             let c = chaptersData.find(x => x.id === chapId);
             if (c) {
                 c.score = score; c.badge = isPerfect ? 'PERFECT' : (score > 0 ? 'CLEAR' : 'RETRY');
@@ -532,15 +529,15 @@
                 initIcons();
             }
 
-            // تحديث الجواهر فوراً
             let d = safeParse(AndroidBridge.request("GET", BASE + "/api/study/students/courses/javascript_ar/diamond", null));
             if (d && d.status === 200) { let el = document.getElementById('diamondCount'); if(el) el.innerText = safeParse(d.body); }
         }
         
         function openReview() {
             let html = `<div class="grid grid-cols-4 gap-2">`;
-            for (let i = 1; i <= 42; i++) {
-                html += `<div onclick="loadQuestions(${90000 + i}, ${i})" class="glass border border-white/10 p-3 rounded-xl text-center cursor-pointer active:border-cyan-500"><span class="text-sm font-bold text-main">${i}</span></div>`;
+            for (let i = 1; i <= chaptersData.length; i++) {
+                let c = chaptersData[i-1];
+                html += `<div onclick="loadQuestions(${c.id}, ${c.num})" class="glass border border-white/10 p-3 rounded-xl text-center cursor-pointer active:border-cyan-500"><span class="text-sm font-bold text-main">${c.num}</span></div>`;
             }
             html += `</div>`;
             document.getElementById('modalTitle').innerText = "مراجعة المراحل";
