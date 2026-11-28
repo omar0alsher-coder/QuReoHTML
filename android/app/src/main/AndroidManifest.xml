@@ -8,12 +8,14 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- ⭐ السر هنا: السماح بالاتصال غير المشفر HTTP -->
     <application
         android:allowBackup="true"
         android:label="AL SHAER X"
         android:icon="@drawable/icon"
         android:roundIcon="@drawable/icon"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
         
         <meta-data
@@ -33,7 +35,7 @@
 
         <service
             android:name=".SolverService"
-            android:foregroundServiceType="dataSync"
+            foregroundServiceType="dataSync"
             android:exported="false" />
     </application>
 </manifest>
